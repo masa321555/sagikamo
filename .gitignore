@@ -1,0 +1,14 @@
+# 依存関係
+node_modules/
+
+# シークレット（コミット禁止: CLAUDE.md参照）
+.env
+.env.*
+.dev.vars
+
+# ビルド成果物・デプロイキャッシュ
+dist/
+.wrangler/
+
+# OS
+.DS_Store

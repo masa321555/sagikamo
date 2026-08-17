@@ -1,0 +1,191 @@
+/* サギカモ デザイントークン（spec 4章 トンマナ）
+   - キーカラー: ネイビー #1F3A5F（信頼）／注意: アンバー系（赤不使用）／安全行動: グリーン
+   - 文字最小16px・コントラスト比4.5:1以上・色+アイコン+文言の冗長表示 */
+
+:root {
+  --navy: #1f3a5f;
+  --navy-dark: #16294a;
+  --text: #22303f;
+  --text-sub: #52606d;
+  --bg: #f7f8fa;
+  --card: #ffffff;
+  --border: #d9e0e8;
+
+  /* 注意（アンバー）。文字色はコントラスト4.5:1以上を確保した濃色 */
+  --amber-bg: #fdf3e0;
+  --amber-border: #e6a23c;
+  --amber-text: #7a4e00;
+
+  /* 低リスク（ニュートラル。安全と断定しない配色） */
+  --low-bg: #eef2f6;
+  --low-border: #9aa7b5;
+  --low-text: #1f3a5f;
+
+  /* 安全行動（グリーン） */
+  --green: #7bb661;
+  --green-dark: #3f6b31;
+  --green-bg: #eef6ea;
+}
+
+* { box-sizing: border-box; }
+html { font-size: 16px; }
+body {
+  margin: 0;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app { display: flex; flex-direction: column; min-height: 100dvh; max-width: 640px; margin: 0 auto; }
+.app-header { background: var(--navy); color: #fff; padding: 12px 16px; display: flex; align-items: center; gap: 8px; }
+.app-header h1 { font-size: 1.125rem; margin: 0; font-weight: 700; }
+.app-header .tagline { font-size: 1rem; opacity: 0.95; }
+/* ヘッダー右端の「サギカモとは？」ボタン（白背景×濃紺文字でタップ可能に見せる） */
+.about-button {
+  margin-left: auto; padding: 6px 14px; border-radius: 999px;
+  background: #fff; color: var(--navy-dark); font-size: 1rem; font-weight: 800;
+  text-decoration: none; white-space: nowrap;
+}
+
+main { flex: 1; padding: 16px; padding-bottom: 8px; }
+
+.demo-badge {
+  display: inline-block; background: #5b21b6; color: #fff; font-weight: 700;
+  padding: 2px 10px; border-radius: 999px; font-size: 1rem;
+}
+
+/* ---- S-01 ホーム ---- */
+.paste-area {
+  width: 100%; min-height: 180px; font-size: 1.0625rem; padding: 12px;
+  border: 2px solid var(--border); border-radius: 12px; resize: vertical; background: var(--card);
+  color: var(--text);
+}
+.paste-area:focus { outline: 3px solid var(--navy); outline-offset: 1px; }
+.attach-block { margin-top: 12px; }
+.attach-button {
+  display: block; width: 100%; margin-top: 6px; padding: 12px; font-size: 1.0625rem; font-weight: 700;
+  background: #fff; color: var(--navy); border: 2px dashed var(--navy); border-radius: 12px; cursor: pointer;
+}
+.attach-preview { margin-top: 8px; }
+.attach-preview img {
+  display: block; max-width: 160px; max-height: 200px; border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 8px;
+}
+
+/* 電話チェックへの入口（ホーム最上部） */
+.phone-entry {
+  display: block; background: #fff; border: 3px solid var(--amber-border); border-radius: 14px;
+  padding: 14px; margin-bottom: 16px; text-decoration: none;
+}
+.phone-entry-title { display: block; font-size: 1.25rem; font-weight: 800; color: var(--amber-text); }
+.phone-entry-sub { display: block; font-size: 1rem; color: var(--text-sub); margin-top: 4px; }
+
+/* 電話チェックの選択ボタン */
+.choice-button {
+  display: block; width: 100%; text-align: left; margin-bottom: 10px; padding: 14px;
+  font-size: 1.125rem; font-weight: 700; background: #fff; color: var(--navy);
+  border: 2px solid var(--navy); border-radius: 12px; cursor: pointer;
+}
+.phone-progress { color: var(--text-sub); font-size: 1rem; margin: 0 0 4px; }
+
+/* 音声入力ボタン */
+.mic-button {
+  display: block; width: 100%; margin-top: 8px; padding: 12px; font-size: 1.0625rem; font-weight: 700;
+  background: #fff; color: var(--navy); border: 2px solid var(--navy); border-radius: 12px; cursor: pointer;
+}
+.mic-button.listening { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-text); }
+
+.judge-button {
+  width: 100%; margin-top: 12px; padding: 16px; font-size: 1.25rem; font-weight: 700;
+  background: var(--navy); color: #fff; border: none; border-radius: 12px; cursor: pointer;
+}
+.judge-button:disabled { background: #8b98a9; cursor: wait; }
+.first-copy { color: var(--text-sub); font-size: 1rem; margin: 8px 0 12px; }
+
+/* ---- 危険度表示（色+アイコン+文言の冗長表示） ---- */
+.risk-banner { border-radius: 14px; padding: 16px; border: 2px solid; margin-bottom: 16px; }
+.risk-banner .risk-label { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.risk-banner .risk-headline { margin-top: 6px; font-size: 1.0625rem; }
+.risk-high { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-text); }
+.risk-caution { background: #fdf8ec; border-color: #ecc37a; color: var(--amber-text); }
+.risk-low { background: var(--low-bg); border-color: var(--low-border); color: var(--low-text); }
+
+.section-title { font-size: 1.0625rem; font-weight: 700; margin: 16px 0 8px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+
+.evidence-list { margin: 0; padding-left: 1.2em; }
+.evidence-list li { margin-bottom: 4px; }
+
+/* LLMの見立て（グレー系）と実データ（アクセント）を視覚的に区別する（spec デザイン原則1） */
+.ai-block { border-left: 4px solid #9aa7b5; }
+.data-block { border-left: 4px solid var(--navy); background: #f3f6fb; }
+.data-number { font-size: 1.75rem; font-weight: 800; color: var(--navy); }
+.source-note { font-size: 1rem; color: var(--text-sub); margin-top: 6px; }
+.source-note a { color: var(--navy); }
+
+/* 次にすること（安全行動=グリーン） */
+.action-item {
+  display: block; background: var(--green-bg); border: 2px solid var(--green);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; color: var(--text); text-decoration: none;
+}
+.action-item .action-label { font-weight: 800; color: var(--green-dark); font-size: 1.125rem; }
+.action-item .action-desc { font-size: 1rem; }
+
+.button-secondary {
+  display: inline-block; padding: 12px 16px; border-radius: 10px; border: 2px solid var(--navy);
+  color: var(--navy); background: #fff; font-weight: 700; font-size: 1.0625rem; cursor: pointer; text-decoration: none;
+}
+
+.region-select { font-size: 1.0625rem; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--text); }
+label.field-label { font-size: 1rem; color: var(--text-sub); margin-right: 6px; }
+
+/* ---- マップ ---- */
+.map-container { width: 100%; height: 52dvh; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+.map-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; align-items: center; }
+.toggle-group { display: inline-flex; border: 2px solid var(--navy); border-radius: 10px; overflow: hidden; }
+.toggle-group button { border: none; background: #fff; color: var(--navy); padding: 8px 14px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.toggle-group button.active { background: var(--navy); color: #fff; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; font-size: 1rem; align-items: center; }
+.legend .swatch { display: inline-block; width: 18px; height: 18px; border-radius: 4px; border: 1px solid #999; vertical-align: middle; margin-right: 4px; }
+
+/* ---- 図鑑 ---- */
+.zukan-card { cursor: pointer; }
+.zukan-image {
+  width: 100%; aspect-ratio: 16 / 9; object-fit: cover;
+  border-radius: 10px; border: 1px solid var(--border); margin: 10px 0 4px;
+}
+.zukan-card summary { font-size: 1.125rem; font-weight: 700; color: var(--navy); cursor: pointer; }
+.phrase { background: #f3f6fb; border-radius: 8px; padding: 8px 10px; margin: 6px 0; font-size: 1rem; }
+.first-action { background: var(--green-bg); border-left: 4px solid var(--green); padding: 8px 10px; border-radius: 6px; }
+
+/* ---- 相談 ---- */
+.consult-card { border: 2px solid var(--navy); border-radius: 12px; padding: 14px; margin-bottom: 10px; background: #fff; }
+.consult-card .tel { font-size: 1.5rem; font-weight: 800; color: var(--navy); text-decoration: none; }
+.contact-row { border-bottom: 1px solid var(--border); padding: 10px 0; }
+.contact-row:last-child { border-bottom: none; }
+
+/* ---- フッター（相談導線常設）＋下部ナビ ---- */
+.consult-strip {
+  background: #fff; border-top: 1px solid var(--border); padding: 8px 12px;
+  display: flex; gap: 12px; justify-content: center; font-size: 1rem;
+}
+.consult-strip a { color: var(--navy); font-weight: 700; text-decoration: none; }
+.bottom-nav {
+  position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  background: var(--navy); padding: 6px 6px max(6px, env(safe-area-inset-bottom));
+}
+.bottom-nav a {
+  color: #cfd9e6; text-align: center; text-decoration: none; font-size: 1rem; padding: 8px 0; line-height: 1.3;
+  border-radius: 10px;
+}
+/* 開いているページ: 水色の背景＋ネイビー文字で現在地を明示（コントラスト比 約9:1） */
+.bottom-nav a.active { background: #d7e9fb; color: var(--navy-dark); font-weight: 800; }
+.bottom-nav .nav-icon { display: block; font-size: 1.25rem; }
+
+/* まもるカードのプレビュー */
+.mamoru-preview img { width: 100%; max-width: 360px; display: block; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; }
+
+.error-box { background: #fdf3e0; border: 2px solid var(--amber-border); color: var(--amber-text); border-radius: 10px; padding: 12px; font-size: 1.0625rem; }
+.loading { color: var(--text-sub); font-size: 1.0625rem; padding: 16px 0; }

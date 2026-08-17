@@ -1,0 +1,32 @@
+{
+  "name": "sagikanchi",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "fetch-opendata": "tsx scripts/fetch_opendata.ts",
+    "build-stats": "tsx scripts/build_stats.ts",
+    "verify-stats": "tsx scripts/verify_stats.ts",
+    "make-seed": "tsx scripts/make_seed.ts",
+    "eval": "tsx scripts/eval.ts",
+    "dev": "vite",
+    "sync-maplibre": "cp node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs public/maplibre/",
+    "build": "npm run sync-maplibre && vite build",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "vite": "^8.2.1",
+    "wrangler": "^4.123.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
+    "maplibre-gl": "^6.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}

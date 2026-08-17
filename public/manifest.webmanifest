@@ -1,0 +1,10 @@
+{
+  "name": "サギカモ",
+  "short_name": "サギカモ",
+  "description": "不審な文面の危険度を東京都の実データと生成AIで見立てる詐欺被害防止サービス",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F8FA",
+  "theme_color": "#1F3A5F",
+  "icons": []
+}

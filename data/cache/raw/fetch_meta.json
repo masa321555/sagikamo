@@ -1,0 +1,52 @@
+{
+  "records": [
+    {
+      "key": "d1_current",
+      "name": "区市町村の町丁別、罪種別及び手口別認知件数（月累計）令和8年分",
+      "provider": "警視庁",
+      "url": "https://www.keishicho.metro.tokyo.lg.jp/about_mpd/jokyo_tokei/jokyo/ninchikensu.files/R8.csv",
+      "fetchedAt": "2026-08-11T18:30:14.118Z",
+      "httpStatus": 200,
+      "bytes": 474152,
+      "rows": 5013,
+      "period": "令和8年6月累計",
+      "note": "APIカタログ未登録のため警視庁サイトから月次バッチで直接取得（Shift_JIS）。公表当時の暫定値。"
+    },
+    {
+      "key": "d1_prev",
+      "name": "区市町村の町丁別、罪種別及び手口別認知件数（月累計）令和7年分",
+      "provider": "警視庁",
+      "url": "https://service.api.metro.tokyo.lg.jp/api/t000022d1700000021-0632e1972402bbe7acd54e1baa425f94-0/json",
+      "fetchedAt": "2026-08-11T18:30:27.197Z",
+      "httpStatus": 200,
+      "bytes": 0,
+      "rows": 5237,
+      "period": "令和7年（年間）",
+      "note": "東京都オープンデータAPI経由。令和7年の年間確定分（元CSV: R7.csv）。"
+    },
+    {
+      "key": "d3",
+      "name": "住民基本台帳による東京都の世帯と人口（町丁別・年齢別）令和8年1月 第３‐１表 区市町村、年齢３区分別人口（人口総数）",
+      "provider": "東京都総務局",
+      "url": "https://service.api.metro.tokyo.lg.jp/api/t000003d2000001115-fc3e15adb482542f766115471be19a90-0/json",
+      "fetchedAt": "2026-08-11T18:30:27.369Z",
+      "httpStatus": 200,
+      "bytes": 0,
+      "rows": 72,
+      "period": "令和8年1月1日現在",
+      "note": "令和8年1月1日現在。65歳以上人口はリスク指数の分母。"
+    },
+    {
+      "key": "d4",
+      "name": "高齢者等の異変に気付いた際の区市町村連絡先一覧",
+      "provider": "東京都福祉局",
+      "url": "https://service.api.metro.tokyo.lg.jp/api/t000054d0000000084-95089ae4131e4cfcfd43b9eeef5fb705-0/json",
+      "fetchedAt": "2026-08-11T18:30:27.545Z",
+      "httpStatus": 200,
+      "bytes": 0,
+      "rows": 698,
+      "period": null,
+      "note": "version 1.0.3（698行）。先頭にヘッダ的な空行が1行あり取り込み時に除外。"
+    }
+  ]
+}
