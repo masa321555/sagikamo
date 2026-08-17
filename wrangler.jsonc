@@ -8,6 +8,12 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application"
-  }
+  },
+  // 判定APIのレート制限（クレジット保護）: Durable Objectsで正確にカウント
+  // IP単位 6回/分 ＋ 全体 30回/分
+  "durable_objects": {
+    "bindings": [{ "name": "RL_DO", "class_name": "JudgeRateLimiter" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["JudgeRateLimiter"] }]
   // シークレット: npx wrangler secret put ANTHROPIC_API_KEY で登録（コミット禁止）
 }

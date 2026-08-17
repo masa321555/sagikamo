@@ -10,11 +10,56 @@ import statsJson from "../data/cache/stats.json";
 import contactsJson from "../data/cache/contacts.json";
 import townsJson from "../data/cache/towns.json";
 
+// Durable Objects の最小型定義（@cloudflare/workers-types非依存）
+interface DOStorage {
+  get<T>(key: string): Promise<T | undefined>;
+  put(key: string, value: unknown): Promise<void>;
+  delete(key: string): Promise<boolean>;
+}
+interface DOState {
+  storage: DOStorage;
+}
+interface DONamespace {
+  idFromName(name: string): unknown;
+  get(id: unknown): { fetch(url: string): Promise<Response> };
+}
+
 interface Env {
   ANTHROPIC_API_KEY: string; // wrangler secret
   LLM_MODEL?: string;
   LLM_EFFORT?: "low" | "medium" | "high";
   ASSETS: { fetch(request: Request): Promise<Response> };
+  RL_DO?: DONamespace; // レート制限カウンタ
+}
+
+/** レート制限カウンタ（Durable Object）。1分窓のリクエスト数を正確に数える */
+export class JudgeRateLimiter {
+  private state: DOState;
+  constructor(state: DOState) {
+    this.state = state;
+  }
+  async fetch(request: Request): Promise<Response> {
+    const limit = Number(new URL(request.url).searchParams.get("limit") ?? "0");
+    const window = Math.floor(Date.now() / 60_000);
+    const key = `w:${window}`;
+    const count = ((await this.state.storage.get<number>(key)) ?? 0) + 1;
+    await this.state.storage.put(key, count);
+    await this.state.storage.delete(`w:${window - 1}`); // 前の窓は掃除
+    return new Response(JSON.stringify({ success: count <= limit }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
+const RL_IP_LIMIT = 6; // IPあたり 6回/分
+const RL_GLOBAL_LIMIT = 30; // 全体 30回/分（クレジット消費の上限）
+
+async function checkRateLimit(env: Env, name: string, limit: number): Promise<boolean> {
+  if (!env.RL_DO) return true;
+  const stub = env.RL_DO.get(env.RL_DO.idFromName(name));
+  const res = await stub.fetch(`https://rl/?limit=${limit}`);
+  const body = (await res.json()) as { success: boolean };
+  return body.success;
 }
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
@@ -26,6 +71,16 @@ function json(status: number, body: unknown): Response {
 let judgeCtx: JudgeContext | null = null;
 
 async function handleJudge(request: Request, env: Env): Promise<Response> {
+  // レート制限（本文の検証より先に実施し、不正リクエストの連打も遮断する）
+  const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+  const [ipOk, globalOk] = await Promise.all([
+    checkRateLimit(env, `ip:${ip}`, RL_IP_LIMIT),
+    checkRateLimit(env, "global", RL_GLOBAL_LIMIT),
+  ]);
+  if (!ipOk || !globalOk) {
+    return json(429, { error: "アクセスが集中しています。1分ほど待ってから、もう一度お試しください。" });
+  }
+
   const body = (await request.json().catch(() => null)) as
     | { text?: unknown; image?: { mediaType?: unknown; dataBase64?: unknown } }
     | null;
