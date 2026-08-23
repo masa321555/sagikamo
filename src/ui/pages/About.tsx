@@ -1,14 +1,20 @@
 // サギカモとは（初回利用者向けの説明ページ）
 // トーンは「隣にいる冷静な家族」。断定表現を使わず、見立てであることを明示する（CLAUDE.mdルール1・6章）
+// キャラクターは判定・結果画面と同じポーズを使い分け、白背景カード上にのみ配置する
+
+import { Kamo } from "../components/common.tsx";
 
 export function About() {
   return (
     <div>
       <h2 className="section-title" style={{ marginTop: 0, fontSize: "1.25rem" }}>サギカモとは</h2>
-      <p>
-        サギカモは、「これって詐欺かも?」と感じたときに使う、無料の詐欺被害防止サービスです。
-        不審な文面をAIが見立て、東京都の実データ（警視庁の統計）とあわせて、次にすべき行動までご案内します。
-      </p>
+      <div className="card" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <p style={{ margin: 0, flex: 1 }}>
+          サギカモは、「これって詐欺かも?」と感じたときに使う、無料の詐欺被害防止サービスです。
+          不審な文面をAIが見立て、東京都の実データ（警視庁の統計）とあわせて、次にすべき行動までご案内します。
+        </p>
+        <Kamo pose="base" size={96} alt="サギカモのキャラクター" />
+      </div>
 
       <div className="card">
         <h3 className="section-title" style={{ marginTop: 0 }}>こんなときに使ってください</h3>
@@ -27,12 +33,17 @@ export function About() {
       <h3 className="section-title">おもな機能</h3>
 
       <div className="card">
-        <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>🔍 判定</p>
-        <p>
-          AIが「どの手口に近いか」「危険度はどれくらいか」を根拠つきで見立てて、
-          あなたの街での認知件数と、次にすべき行動までお伝えします。
-          伝え方は4とおり。使いやすい方法をお選びください。
-        </p>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>🔍 判定</p>
+            <p>
+              AIが「どの手口に近いか」「危険度はどれくらいか」を根拠つきで見立てて、
+              あなたの街での認知件数と、次にすべき行動までお伝えします。
+              伝え方は4とおり。使いやすい方法をお選びください。
+            </p>
+          </div>
+          <Kamo pose="inspect" size={80} alt="虫眼鏡で文面を調べるサギカモ" />
+        </div>
         <ul className="evidence-list" style={{ marginBottom: 0 }}>
           <li><strong>電話チェック</strong>: あやしい電話は、ボタンをえらぶだけ（文字入力は不要）</li>
           <li><strong>貼り付け</strong>: メール・SMS・LINEなどの文面をコピーして貼るだけ</li>
@@ -70,13 +81,16 @@ export function About() {
         </p>
       </div>
 
-      <div className="card">
-        <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>💌 まもるカード</p>
-        <p style={{ marginBottom: 0 }}>
-          判定結果や手口図鑑から、注意してほしいポイントをやさしい言葉と大きな文字でまとめた
-          1枚の画像を作れます。LINEなどで送るだけで、離れて暮らすご家族に
-          「こんな連絡に気をつけて」を伝えられます。あなたの判定が、家族の備えになります。
-        </p>
+      <div className="card" style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>💌 まもるカード</p>
+          <p style={{ marginBottom: 0 }}>
+            判定結果や手口図鑑から、注意してほしいポイントをやさしい言葉と大きな文字でまとめた
+            1枚の画像を作れます。LINEなどで送るだけで、離れて暮らすご家族に
+            「こんな連絡に気をつけて」を伝えられます。あなたの判定が、家族の備えになります。
+          </p>
+        </div>
+        <Kamo pose="card" size={80} alt="カードを差し出すサギカモ" />
       </div>
 
       <p className="source-note">
