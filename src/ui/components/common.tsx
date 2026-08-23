@@ -12,15 +12,21 @@ const ACTION_HREF: Partial<Record<ActionId, string>> = {
   call_110: "tel:110",
 };
 
-export type KamoPose = "base" | "inspect" | "stop" | "card";
+export type KamoPose = "base" | "inspect" | "stop" | "card" | "relief" | "phone" | "book";
+
+/** 画像を差し替えたときに上げる（ブラウザ/CDNキャッシュを確実に更新するためのクエリ） */
+const KAMO_ASSET_VERSION = "2";
+export function kamoAssetUrl(pose: KamoPose, ext: "png" | "webp"): string {
+  return `/assets/kamo/kamo_${pose}.${ext}?v=${KAMO_ASSET_VERSION}`;
+}
 
 /** キャラクター画像（WebP＋PNGフォールバック）。白系背景のカード上にのみ配置すること */
 export function Kamo({ pose, size, alt }: { pose: KamoPose; size: number; alt?: string }) {
   return (
     <picture>
-      <source srcSet={`/assets/kamo/kamo_${pose}.webp`} type="image/webp" />
+      <source srcSet={kamoAssetUrl(pose, "webp")} type="image/webp" />
       <img
-        src={`/assets/kamo/kamo_${pose}.png`}
+        src={kamoAssetUrl(pose, "png")}
         alt={alt ?? "サギカモのキャラクター"}
         width={size}
         height={size}

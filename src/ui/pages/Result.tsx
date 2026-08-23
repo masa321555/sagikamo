@@ -84,7 +84,8 @@ export function Result({ result, isDemoJudgement }: { result: JudgeResponse; isD
             )}
             {riskInfo.headline && <p className="summary-headline">{riskInfo.headline}</p>}
           </div>
-          <Kamo pose={result.risk === "low" ? "base" : "stop"} size={72} alt={result.risk === "low" ? "ほほえむサギカモ" : "手を前に出して止めるサギカモ"} />
+          {/* 低リスクは「ほっと一息」。ただし定型注意文（LOW_RISK_NOTICE）はそのまま表示する */}
+          <Kamo pose={result.risk === "low" ? "relief" : "stop"} size={72} alt={result.risk === "low" ? "ほっと一息つくサギカモ" : "手を前に出して止めるサギカモ"} />
         </div>
 
         <div className="summary-data">

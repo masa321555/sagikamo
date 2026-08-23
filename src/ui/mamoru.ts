@@ -2,6 +2,8 @@
 // やさしい日本語・大きな文字（spec）。断定表現は使わない（内容は定型文＋判定結果の特徴のみ）。
 // 画像はブラウザ内で生成し、サーバーへ送信しない。
 
+import { kamoAssetUrl } from "./components/common.tsx";
+
 export interface MamoruCardParams {
   addressee?: string | null; // 宛名（例: おかあさんへ）。画像にのみ描画し、保存しない
   riskLabel: string | null; // 例: 要注意（図鑑からの生成時はnull）
@@ -69,7 +71,7 @@ export async function generateMamoruCard(p: MamoruCardParams): Promise<{ blob: B
   ctx.font = font(40);
   const regionLines = p.regionLine ? wrapText(ctx, p.regionLine, CONTENT_W - 20) : [];
 
-  const kamo = await loadImage("/assets/kamo/kamo_card.png");
+  const kamo = await loadImage(kamoAssetUrl("card", "png"));
   const addressee = (p.addressee ?? "").trim();
   const kamoH = 150; // キャラクター＋宛名の白い帯（ヘッダーの紺の上には置かない）
   const stripH = kamo || addressee ? kamoH + 30 : 0;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getContacts } from "../api.ts";
-import { SourceNote } from "../components/common.tsx";
+import { Kamo, SourceNote } from "../components/common.tsx";
 import type { ContactsJson } from "../types.ts";
 
 export function Consult() {
@@ -31,6 +31,18 @@ export function Consult() {
       <div className="consult-card">
         <a className="tel" href="tel:188">188</a>
         <p style={{ margin: "4px 0 0" }}>契約・支払い・買い物のトラブル（消費者ホットライン）</p>
+      </div>
+
+      {/* キャラクターは緊急導線（110）の周辺には置かず、区市町村窓口の導入部にのみ配置する */}
+      <div className="card" style={{ marginTop: 12 }}>
+        <p className="kamo-lead">迷ったら、かけて大丈夫。</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+          <p style={{ margin: 0, flex: 1, minWidth: 0 }}>
+            「こんなことで電話していいのかな」と思うような内容でも、相談窓口はそのためにあります。
+            ひとりで抱え込まず、早めにご相談ください。
+          </p>
+          <Kamo pose="phone" size={88} alt="受話器で相談の電話をかけるサギカモ" />
+        </div>
       </div>
 
       <h2 className="section-title">お住まいの区市町村の高齢者相談窓口</h2>

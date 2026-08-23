@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { getStats, getTechniques } from "../api.ts";
-import { AddresseeField, SourceNote } from "../components/common.tsx";
+import { AddresseeField, Kamo, SourceNote } from "../components/common.tsx";
 import { generateMamoruCard, shareMamoruCard } from "../mamoru.ts";
 import type { StatsJson, TechniqueDef } from "../types.ts";
 
@@ -37,13 +37,21 @@ export function Zukan() {
   return (
     <div>
       <h2 className="section-title" style={{ marginTop: 0 }}>手口図鑑</h2>
-      <p style={{ marginTop: 0 }}>
-        詐欺の被害は高齢者に限りません。ニセ警察詐欺は若い世代を含む幅広い世代で急増しており、
-        SNS型投資詐欺・サポート詐欺・架空料金請求も働く世代が多く狙われています。
-      </p>
-      <p className="source-note" style={{ marginTop: 0 }}>
-        分類・実例フレーズ・被害傾向は警察庁・警視庁の公表資料に基づきます。
-      </p>
+      <div className="card">
+        <p className="kamo-lead">手口を知れば、こわくない。</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0 }}>
+              詐欺の被害は高齢者に限りません。ニセ警察詐欺は若い世代を含む幅広い世代で急増しており、
+              SNS型投資詐欺・サポート詐欺・架空料金請求も働く世代が多く狙われています。
+            </p>
+            <p className="source-note" style={{ margin: "6px 0 0" }}>
+              分類・実例フレーズ・被害傾向は警察庁・警視庁の公表資料に基づきます。
+            </p>
+          </div>
+          <Kamo pose="book" size={88} alt="本を読んで手口を学ぶサギカモ" />
+        </div>
+      </div>
 
       {techniques.techniques.map((t) => (
         <details key={t.id} className="card zukan-card">
