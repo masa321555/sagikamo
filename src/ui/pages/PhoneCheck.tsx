@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { postJudge } from "../api.ts";
+import { LoadingKamo } from "../components/common.tsx";
 import type { JudgeResponse } from "../types.ts";
 
 interface Choice {
@@ -81,7 +82,7 @@ export function PhoneCheck({ onJudged }: { onJudged: (result: JudgeResponse, isD
     return (
       <div>
         <h2 className="section-title" style={{ marginTop: 0, fontSize: "1.25rem" }}>📞 電話チェック</h2>
-        <p className="loading" style={{ fontSize: "1.25rem" }}>チェックしています…そのままお待ちください（10秒ほど）</p>
+        <LoadingKamo message="カモが確認しています…そのままお待ちください（10秒ほど）" />
       </div>
     );
   }

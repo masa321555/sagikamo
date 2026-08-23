@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { getStats, getTechniques } from "../api.ts";
-import { SourceNote } from "../components/common.tsx";
+import { AddresseeField, SourceNote } from "../components/common.tsx";
 import { generateMamoruCard, shareMamoruCard } from "../mamoru.ts";
 import type { StatsJson, TechniqueDef } from "../types.ts";
 
@@ -11,6 +11,7 @@ export function Zukan() {
   const techniques = getTechniques();
   const [stats, setStats] = useState<{ data: StatsJson; isDemo: boolean } | null>(null);
   const [card, setCard] = useState<{ techId: string; dataUrl: string; blob: Blob } | null>(null);
+  const [addressee, setAddressee] = useState(""); // 画像にのみ描画。保存しない
 
   useEffect(() => {
     getStats().then(setStats);
@@ -19,6 +20,7 @@ export function Zukan() {
   const makeCard = async (t: TechniqueDef) => {
     const period = stats?.data.tokyoTotal.currentPeriod ?? "今年";
     const generated = await generateMamoruCard({
+      addressee,
       riskLabel: null,
       title: t.name,
       headline: "よくあるフレーズに注意",
@@ -72,11 +74,12 @@ export function Zukan() {
               </div>
             </div>
           ) : (
-            <p style={{ marginBottom: 0 }}>
+            <div style={{ marginBottom: 0 }}>
+              <AddresseeField value={addressee} onChange={setAddressee} />
               <button className="button-secondary" onClick={() => void makeCard(t)}>
                 💌 まもるカードを作る<br />（家族に知らせる）
               </button>
-            </p>
+            </div>
           )}
         </details>
       ))}

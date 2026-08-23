@@ -73,6 +73,8 @@ export function MapPage() {
   const [metric, setMetric] = useState<MetricMode>("all"); // 既定は全年代（幅広い利用者向け）
   const [selected, setSelected] = useState<number | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
 
   useEffect(() => {
     getStats().then(setStats);
@@ -112,7 +114,10 @@ export function MapPage() {
         const f = e.features?.[0];
         if (f) setSelected(f.properties.code as number);
       });
+      // 当年⇄前年・指標切替時に0.3秒で色が変わる
+      map.setPaintProperty("muni-fill", "fill-color-transition", { duration: 300, delay: 0 });
       setColors(map);
+      setMapReady(true);
     });
     mapRef.current = map;
     if (import.meta.env.DEV) {
@@ -141,6 +146,34 @@ export function MapPage() {
     if (map && map.getLayer("muni-fill")) setColors(map);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, metric, stats]);
+
+  // リスク指数 上位5区市町村に数値ラベル（HTMLマーカー。フォント不要で日本語環境でも安定）
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !stats || !geo) return;
+    for (const mk of markersRef.current) mk.remove();
+    markersRef.current = [];
+    const top5 = [...stats.data.municipalities]
+      .map((m) => ({ m, v: indexOf(m, mode, metric) }))
+      .filter((x): x is { m: MuniStat; v: number } => x.v !== null)
+      .sort((a, b) => b.v - a.v)
+      .slice(0, 5);
+    for (const { m, v } of top5) {
+      const f = geo.features.find((x) => x.properties.code === m.code);
+      if (!f) continue;
+      const [[minX, minY], [maxX, maxY]] = bboxOf(f.geometry);
+      const el = document.createElement("div");
+      el.className = "map-label";
+      el.textContent = `${m.name} ${v.toFixed(1)}`;
+      el.setAttribute("aria-label", `${m.name} リスク指数 ${v.toFixed(1)}`);
+      el.addEventListener("click", () => setSelected(m.code));
+      const mk = new maplibregl.Marker({ element: el, anchor: "center" })
+        .setLngLat([(minX + maxX) / 2, (minY + maxY) / 2])
+        .addTo(map);
+      markersRef.current.push(mk);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, mode, metric, stats, geo]);
 
   // 選択ハイライト
   useEffect(() => {
@@ -229,9 +262,56 @@ export function MapPage() {
       </div>
 
       {mapError && <p className="error-box">{mapError}</p>}
-      <div ref={mapDiv} className="map-container" aria-label="東京都の区市町村別リスクマップ" />
+      <div className="map-wrap">
+        <div ref={mapDiv} className="map-container" aria-label="東京都の区市町村別リスクマップ" />
+        {sel && stats && (
+          <div className="map-sheet" role="dialog" aria-label={`${sel.name}の詳細`}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: "1.125rem" }}>{sel.name}</p>
+              <button type="button" className="sheet-close" onClick={() => setSelected(null)} aria-label="閉じる">✕ 閉じる</button>
+            </div>
+            <p style={{ margin: "4px 0 0" }}>
+              リスク指数（{mode === "current" ? "当年" : "前年"}・{metric === "all" ? "全年代" : "高齢者"}）:
+              <span className="data-number"> {selIdx === null ? "算出不可" : selIdx.toFixed(1)} </span>
+              {selIdx !== null && <span className="source-note">（{metric === "all" ? "都民" : "高齢者"}1万人あたり）</span>}
+            </p>
+            <p className="source-note" style={{ margin: "2px 0 0" }}>
+              参考: {metric === "all" ? "高齢者" : "全年代"}1万人あたりは {selIdxOther === null ? "算出不可" : selIdxOther.toFixed(1)}
+            </p>
+            <p style={{ margin: "4px 0 0" }}>
+              認知件数: {(mode === "current" ? sel.sagiCurrent : sel.sagiPrevYear).toLocaleString()}件 ／
+              人口: {sel.popTotal.toLocaleString()}人（うち65歳以上 {sel.pop65.toLocaleString()}人）
+            </p>
+            {(() => {
+              const rank = towns?.data.municipalities[String(sel.code)] ?? [];
+              if (rank.length === 0) return null;
+              return (
+                <div style={{ marginTop: 8 }}>
+                  <p style={{ margin: 0, fontWeight: 700 }}>
+                    件数が多い町丁 トップ{rank.length}（当年） {towns?.isDemo && <DemoBadge show />}
+                  </p>
+                  <ol style={{ margin: "2px 0 0", paddingLeft: "1.4em" }}>
+                    {rank.map((t) => (
+                      <li key={t.name}>{t.name} — {t.sagi.toLocaleString()}件</li>
+                    ))}
+                  </ol>
+                </div>
+              );
+            })()}
+            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="button-secondary" onClick={() => { setRegion("home", sel.code); alert(`${sel.name}を自宅に設定しました`); }}>
+                自宅に設定
+              </button>
+              <button className="button-secondary" onClick={() => { setRegion("jikka", sel.code); alert(`${sel.name}を実家に設定しました`); }}>
+                実家に設定
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="legend" style={{ marginTop: 8 }}>
+        <span style={{ width: "100%" }}>色が濃いほど、{metric === "all" ? "人口" : "65歳以上人口"}1万人あたりの件数が多い地域です。</span>
         <strong>指数:</strong>
         {breaks.length > 0 && (
           <>
@@ -245,52 +325,6 @@ export function MapPage() {
         <span><span className="swatch" style={{ background: NO_DATA_COLOR }} />算出不可</span>
       </div>
 
-      {sel && stats && (
-        <div className="card data-block" style={{ marginTop: 10 }}>
-          <p style={{ margin: 0, fontWeight: 800, fontSize: "1.125rem" }}>{sel.name}</p>
-          <p style={{ margin: "4px 0 0" }}>
-            リスク指数（{mode === "current" ? "当年" : "前年"}・{metric === "all" ? "全年代" : "高齢者"}）:
-            <span className="data-number"> {selIdx === null ? "算出不可" : selIdx.toFixed(1)} </span>
-            {selIdx !== null && <span className="source-note">（{metric === "all" ? "都民" : "高齢者"}1万人あたり）</span>}
-          </p>
-          <p className="source-note" style={{ margin: "2px 0 0" }}>
-            参考: {metric === "all" ? "高齢者" : "全年代"}1万人あたりは {selIdxOther === null ? "算出不可" : selIdxOther.toFixed(1)}
-          </p>
-          <p style={{ margin: "4px 0 0" }}>
-            認知件数: {(mode === "current" ? sel.sagiCurrent : sel.sagiPrevYear).toLocaleString()}件 ／
-            人口: {sel.popTotal.toLocaleString()}人（うち65歳以上 {sel.pop65.toLocaleString()}人）
-          </p>
-          {(() => {
-            const rank = towns?.data.municipalities[String(sel.code)] ?? [];
-            if (rank.length === 0) return null;
-            return (
-              <div style={{ marginTop: 10 }}>
-                <p style={{ margin: 0, fontWeight: 700 }}>
-                  件数が多い町丁 トップ{rank.length}（当年） {towns?.isDemo && <DemoBadge show />}
-                </p>
-                <ol style={{ margin: "4px 0 0", paddingLeft: "1.4em" }}>
-                  {rank.map((t) => (
-                    <li key={t.name}>
-                      {t.name} — {t.sagi.toLocaleString()}件
-                    </li>
-                  ))}
-                </ol>
-                <p className="source-note" style={{ margin: "2px 0 0" }}>
-                  ※町丁は住所の区分です。お住まいの近くの傾向を知る参考にしてください。
-                </p>
-              </div>
-            );
-          })()}
-          <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="button-secondary" onClick={() => { setRegion("home", sel.code); alert(`${sel.name}を自宅に設定しました`); }}>
-              自宅に設定
-            </button>
-            <button className="button-secondary" onClick={() => { setRegion("jikka", sel.code); alert(`${sel.name}を実家に設定しました`); }}>
-              実家に設定
-            </button>
-          </div>
-        </div>
-      )}
 
       {stats && (
         <>

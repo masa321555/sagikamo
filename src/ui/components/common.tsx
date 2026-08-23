@@ -1,6 +1,7 @@
 // 共通コンポーネント: 危険度バナー・行動リスト・出典表示・デモバッジ
 // 文言はすべて src/lib/judge/templates.ts の定型文から引く（断定禁止の構造的担保）
 
+import { useState } from "react";
 import { ACTION_DISPLAY, LOW_RISK_NOTICE, RISK_DISPLAY } from "../../lib/judge/templates.ts";
 import type { ActionId, RiskLevel, SourceInfo } from "../types.ts";
 
@@ -10,6 +11,73 @@ const ACTION_HREF: Partial<Record<ActionId, string>> = {
   consult_188: "tel:188",
   call_110: "tel:110",
 };
+
+export type KamoPose = "base" | "inspect" | "stop" | "card";
+
+/** キャラクター画像（WebP＋PNGフォールバック）。白系背景のカード上にのみ配置すること */
+export function Kamo({ pose, size, alt }: { pose: KamoPose; size: number; alt?: string }) {
+  return (
+    <picture>
+      <source srcSet={`/assets/kamo/kamo_${pose}.webp`} type="image/webp" />
+      <img
+        src={`/assets/kamo/kamo_${pose}.png`}
+        alt={alt ?? "サギカモのキャラクター"}
+        width={size}
+        height={size}
+        style={{ width: size, height: size, objectFit: "contain", flexShrink: 0 }}
+      />
+    </picture>
+  );
+}
+
+/** 判定中ローディング（カモが虫眼鏡で確認中） */
+export function LoadingKamo({ message = "カモが確認しています…（10秒ほどお待ちください）" }: { message?: string }) {
+  return (
+    <div className="loading-kamo" role="status" aria-live="polite">
+      <Kamo pose="inspect" size={96} alt="虫眼鏡で文面を調べるサギカモ" />
+      <p className="loading-kamo-text">{message}</p>
+    </div>
+  );
+}
+
+/** まもるカードの宛名選択（宛名は画像にのみ描画し、保存しない） */
+export const ADDRESSEE_PRESETS = ["おかあさんへ", "おとうさんへ", "おばあちゃんへ", "おじいちゃんへ", "ご家族へ"] as const;
+export function AddresseeField({
+  value, onChange,
+}: { value: string; onChange: (v: string) => void }) {
+  const isPreset = value === "" || (ADDRESSEE_PRESETS as readonly string[]).includes(value);
+  const [custom, setCustom] = useState(!isPreset);
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <label className="field-label" htmlFor="addressee">宛名（任意）</label>
+      <select
+        id="addressee"
+        className="region-select"
+        value={custom ? "__custom" : value}
+        onChange={(e) => {
+          if (e.target.value === "__custom") { setCustom(true); onChange(""); }
+          else { setCustom(false); onChange(e.target.value); }
+        }}
+      >
+        <option value="">宛名なし</option>
+        {ADDRESSEE_PRESETS.map((p) => <option key={p} value={p}>{p}</option>)}
+        <option value="__custom">自分で入力する</option>
+      </select>
+      {custom && (
+        <input
+          type="text"
+          className="region-select"
+          style={{ marginLeft: 6, width: 160 }}
+          placeholder="例: ○○さんへ"
+          maxLength={12}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-label="宛名を入力"
+        />
+      )}
+    </div>
+  );
+}
 
 export function DemoBadge({ show }: { show: boolean }) {
   if (!show) return null;

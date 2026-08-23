@@ -3,6 +3,7 @@
 // 画像はブラウザ内で生成し、サーバーへ送信しない。
 
 export interface MamoruCardParams {
+  addressee?: string | null; // 宛名（例: おかあさんへ）。画像にのみ描画し、保存しない
   riskLabel: string | null; // 例: 要注意（図鑑からの生成時はnull）
   title: string; // 例: 還付金詐欺
   headline: string; // 例: こんな電話に気をつけて
@@ -19,6 +20,16 @@ const AMBER_BORDER = "#e6a23c";
 const AMBER_TEXT = "#7a4e00";
 const GREEN_BG = "#eef6ea";
 const GREEN_DARK = "#3f6b31";
+
+/** 同一オリジンの画像を読み込む（失敗時はnull。カードはキャラなしで生成を続ける） */
+function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const lines: string[] = [];
@@ -58,6 +69,11 @@ export async function generateMamoruCard(p: MamoruCardParams): Promise<{ blob: B
   ctx.font = font(40);
   const regionLines = p.regionLine ? wrapText(ctx, p.regionLine, CONTENT_W - 20) : [];
 
+  const kamo = await loadImage("/assets/kamo/kamo_card.png");
+  const addressee = (p.addressee ?? "").trim();
+  const kamoH = 150; // キャラクター＋宛名の白い帯（ヘッダーの紺の上には置かない）
+  const stripH = kamo || addressee ? kamoH + 30 : 0;
+
   const headerH = 130;
   const riskH = 150;
   const headlineH = 90;
@@ -65,7 +81,7 @@ export async function generateMamoruCard(p: MamoruCardParams): Promise<{ blob: B
   const regionH = regionLines.length > 0 ? regionLines.length * 58 + 30 : 0;
   const actionH = actionLines.length * 60 + 110;
   const footerH = 110;
-  const H = headerH + riskH + headlineH + bodyH + regionH + actionH + footerH + 60;
+  const H = headerH + stripH + riskH + headlineH + bodyH + regionH + actionH + footerH + 60;
 
   canvas.height = H;
 
@@ -84,7 +100,23 @@ export async function generateMamoruCard(p: MamoruCardParams): Promise<{ blob: B
   ctx.fillText("サギカモ", W - PAD, 84);
   ctx.textAlign = "left";
 
-  let y = headerH + 40;
+  // ---- キャラクター＋宛名（白背景の帯） ----
+  let y = headerH + 20;
+  if (stripH > 0) {
+    let textX = PAD;
+    if (kamo) {
+      const kw = Math.round((kamo.width / kamo.height) * kamoH);
+      ctx.drawImage(kamo, PAD, y, kw, kamoH);
+      textX = PAD + kw + 28;
+    }
+    if (addressee) {
+      ctx.fillStyle = NAVY;
+      ctx.font = font(56);
+      ctx.fillText(addressee, textX, y + 95);
+    }
+    y += stripH;
+  }
+  y += 20;
 
   // ---- 危険度＋手口名（アンバー枠） ----
   ctx.fillStyle = AMBER_BG;

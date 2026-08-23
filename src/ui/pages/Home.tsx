@@ -4,9 +4,10 @@
 // 画像・文面ともサーバーに保存しない（CLAUDE.mdルール2）。
 
 import { useEffect, useRef, useState } from "react";
-import { getSampleJudgement, isForcedDemo, postJudge, type JudgeImagePayload } from "../api.ts";
+import { getSampleJudgement, getStats, isForcedDemo, postJudge, type JudgeImagePayload } from "../api.ts";
 import { isDictationSupported, startDictation, type DictationHandle } from "../speech.ts";
-import type { JudgeResponse } from "../types.ts";
+import { DemoBadge, Kamo, LoadingKamo } from "../components/common.tsx";
+import type { JudgeResponse, StatsJson } from "../types.ts";
 
 /** 送信前に画像を縮小してJPEG化する（長辺1568px。通信量とAPIコストを抑える） */
 async function fileToJudgeImage(file: File): Promise<{ payload: JudgeImagePayload; previewUrl: string }> {
@@ -31,11 +32,21 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
+  const [stats, setStats] = useState<{ data: StatsJson; isDemo: boolean } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
   const dictation = useRef<DictationHandle | null>(null);
 
-  useEffect(() => () => dictation.current?.stop(), []);
+  useEffect(() => {
+    // ヒーローカードの都合計は stats.json（警視庁D1「合計」行由来・verify-statsで検算済み）から取得。ハードコードしない
+    getStats().then((s) => {
+      setStats(s);
+      if (import.meta.env.DEV) {
+        console.info(`[hero] 都合計=${s.data.tokyoTotal.sagiCurrent} 期間=${s.data.tokyoTotal.currentPeriod} 出典=${s.data.sources.d1Current.name} isDemo=${s.isDemo}`);
+      }
+    });
+    return () => dictation.current?.stop();
+  }, []);
 
   const onFileSelected = async (f: File | undefined) => {
     setError(null);
@@ -95,6 +106,23 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
   return (
     <div>
       <p className="first-copy">怪しいと思ったら、撮って送るだけ。<br />判定の根拠は、東京都の実データです。</p>
+
+      {stats && (
+        <a className="hero-card" href="#/map" aria-label="東京都の詐欺認知件数。タップでリスクマップへ">
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p className="hero-lead">東京都で今年、詐欺の認知は</p>
+            <p className="hero-number">
+              {stats.data.tokyoTotal.sagiCurrent.toLocaleString()}<span className="hero-unit">件。</span>
+            </p>
+            <p className="source-note" style={{ margin: "2px 0 0" }}>
+              {stats.data.tokyoTotal.currentPeriod ?? ""}・出典: {stats.data.sources.d1Current.provider}「区市町村の町丁別、罪種別及び手口別認知件数」
+              {stats.isDemo && <> <DemoBadge show /></>}
+            </p>
+            <p className="hero-link">あなたの街は？ → マップを見る</p>
+          </div>
+          <Kamo pose="base" size={96} alt="サギカモのキャラクター" />
+        </a>
+      )}
 
       <a className="phone-entry" href="#/phone">
         <span className="phone-entry-title">📞 あやしい電話が来た方はこちら</span>
@@ -160,8 +188,9 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
         )}
       </div>
 
+      {busy && <LoadingKamo />}
       <button className="judge-button" onClick={judge} disabled={busy || !canJudge}>
-        {busy ? "判定中…（10秒ほどお待ちください）" : "判定する"}
+        {busy ? "判定中…" : "判定する"}
       </button>
 
       {error && (
