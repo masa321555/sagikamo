@@ -180,11 +180,6 @@ label.field-label { font-size: 1rem; color: var(--text-sub); margin-right: 6px; 
   font-size: 1rem; font-weight: 700; padding: 4px 10px; cursor: pointer;
 }
 /* 上位5区市町村の数値ラベル */
-.map-label {
-  background: #fff; color: var(--navy-dark); border: 2px solid var(--navy); border-radius: 999px;
-  padding: 2px 8px; font-size: 1rem; font-weight: 800; white-space: nowrap; cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-}
 .map-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; align-items: center; }
 .toggle-group { display: inline-flex; border: 2px solid var(--navy); border-radius: 10px; overflow: hidden; }
 .toggle-group button { border: none; background: #fff; color: var(--navy); padding: 8px 14px; font-size: 1rem; font-weight: 700; cursor: pointer; }

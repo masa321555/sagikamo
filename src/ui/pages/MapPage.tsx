@@ -2,6 +2,8 @@
 // - 当年/前年切替、自宅/実家の2地点切替（localStorage保存）、タップで詳細表示
 // - 手口別フィルタは公開データに内訳がないため提供せず、「詐欺全体」単一指標（注記表示）
 // - 指数が算出不可の場合はグレー表示（0扱いしない）
+// - 名称ラベルはMapLibreのシンボルレイヤー（衝突自動間引き）。漢字・かなは localIdeographFontFamily で
+//   端末フォントをローカル描画するため、外部のグリフサーバーに依存しない。自宅/実家は別レイヤーで常時表示
 
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
@@ -63,6 +65,41 @@ function bboxOf(geom: { type: string; coordinates: unknown }): [[number, number]
   return [[minX, minY], [maxX, maxY]];
 }
 
+/** ラベル代表点: 最大面積のポリゴン（島しょは主島）の外周リングの重心。タイル境界での二重配置を避けるため事前計算する */
+function labelPointOf(geom: { type: string; coordinates: unknown }): [number, number] {
+  const polygons = (geom.type === "MultiPolygon" ? geom.coordinates : [geom.coordinates]) as number[][][][];
+  let best: { x: number; y: number; area: number } | null = null;
+  for (const poly of polygons) {
+    const ring = poly[0];
+    let a = 0, cx = 0, cy = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+      const [x0, y0] = ring[i], [x1, y1] = ring[i + 1];
+      const cross = x0 * y1 - x1 * y0;
+      a += cross; cx += (x0 + x1) * cross; cy += (y0 + y1) * cross;
+    }
+    if (a === 0) continue;
+    const area = Math.abs(a) / 2;
+    if (!best || area > best.area) best = { x: cx / (3 * a), y: cy / (3 * a), area };
+  }
+  if (best) return [best.x, best.y];
+  const [[minX, minY], [maxX, maxY]] = bboxOf(geom);
+  return [(minX + maxX) / 2, (minY + maxY) / 2];
+}
+
+/** 絵文字をCanvasに描いてシンボルのアイコン画像にする（自宅/実家マーク用） */
+function emojiImage(emoji: string): ImageData {
+  const s = 40;
+  const c = document.createElement("canvas");
+  c.width = s; c.height = s;
+  const ctx = c.getContext("2d")!;
+  ctx.font = "30px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(emoji, s / 2, s / 2 + 2);
+  return ctx.getImageData(0, 0, s, s);
+}
+
+const LABEL_TEXT_COLOR = "#1F3A5F";
+
 export function MapPage() {
   const mapDiv = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -74,7 +111,7 @@ export function MapPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const [regionVersion, setRegionVersion] = useState(0); // 自宅/実家の設定変更をラベルに反映するためのカウンタ
 
   useEffect(() => {
     getStats().then(setStats);
@@ -94,10 +131,17 @@ export function MapPage() {
     if (!mapDiv.current || !geo || !stats || mapRef.current) return;
     const map = new maplibregl.Map({
       container: mapDiv.current,
-      style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#dfe7ee" } }] },
+      style: {
+        version: 8,
+        // 漢字・かなはローカル描画するため実際には取得されない（text-field使用時にstyle仕様上必須のため指定）
+        glyphs: "/glyphs/{fontstack}/{range}.pbf",
+        sources: {},
+        layers: [{ id: "bg", type: "background", paint: { "background-color": "#dfe7ee" } }],
+      },
       center: [139.5, 35.68],
       zoom: 8.6,
       attributionControl: false,
+      localIdeographFontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Noto Sans CJK JP', sans-serif",
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
     map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: "国土交通省 国土数値情報（行政区域データ）を加工" }));
@@ -114,9 +158,67 @@ export function MapPage() {
         const f = e.features?.[0];
         if (f) setSelected(f.properties.code as number);
       });
+
+      // 名称ラベル（点ソース。データは別effectで投入）
+      map.addImage("pin-home", emojiImage("🏠"), { pixelRatio: 2 });
+      map.addImage("pin-jikka", emojiImage("🏡"), { pixelRatio: 2 });
+      map.addSource("muni-labels", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      map.addLayer({
+        id: "muni-label", type: "symbol", source: "muni-labels",
+        filter: ["!", ["has", "slot"]],
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 8, 11, 11, 14],
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+          "text-padding": 2,
+          "symbol-sort-key": ["get", "sortKey"],
+        },
+        paint: { "text-color": LABEL_TEXT_COLOR, "text-halo-color": "#ffffff", "text-halo-width": 1.5 },
+      });
+      // 自宅/実家: 最優先（sort-key 0）・常時表示・アイコン付き。上位レイヤーほど先に配置されるため後に追加する
+      map.addLayer({
+        id: "muni-label-pinned", type: "symbol", source: "muni-labels",
+        filter: ["has", "slot"],
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 8, 12, 11, 15],
+          "text-anchor": "top",
+          "text-offset": [0, 0.1],
+          "text-allow-overlap": true,
+          "icon-image": ["case", ["==", ["get", "slot"], "home"], "pin-home", "pin-jikka"],
+          "icon-anchor": "bottom",
+          "icon-allow-overlap": true,
+          "symbol-sort-key": ["get", "sortKey"],
+        },
+        paint: { "text-color": LABEL_TEXT_COLOR, "text-halo-color": "#ffffff", "text-halo-width": 2 },
+      });
+      map.on("click", "muni-label", (e: MapLayerMouseEvent) => {
+        const f = e.features?.[0];
+        if (f) setSelected(f.properties.code as number);
+      });
+      map.on("click", "muni-label-pinned", (e: MapLayerMouseEvent) => {
+        const f = e.features?.[0];
+        if (f) setSelected(f.properties.code as number);
+      });
       // 当年⇄前年・指標切替時に0.3秒で色が変わる
       map.setPaintProperty("muni-fill", "fill-color-transition", { duration: 300, delay: 0 });
       setColors(map);
+      // 初期表示: 多摩中心部〜23区東端を収める（スマホ幅でも読める大きさを優先。西多摩・島しょは
+      // 自宅/実家に設定されている場合のみ範囲に含める）
+      const bounds = new maplibregl.LngLatBounds([139.20, 35.52], [139.92, 35.88]);
+      for (const slot of ["home", "jikka"] as RegionSlot[]) {
+        const code = getRegion(slot);
+        const f = code !== null ? geo.features.find((x) => x.properties.code === code) : undefined;
+        if (f) bounds.extend(labelPointOf(f.geometry));
+      }
+      // コンテナの最終サイズ（dvh）が確定してからフィットする
+      requestAnimationFrame(() => {
+        map.resize();
+        map.fitBounds(bounds, { padding: { top: 16, bottom: 16, left: 28, right: 28 }, duration: 0, maxZoom: 10 });
+      });
       setMapReady(true);
     });
     mapRef.current = map;
@@ -147,33 +249,31 @@ export function MapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, metric, stats]);
 
-  // リスク指数 上位5区市町村に数値ラベル（HTMLマーカー。フォント不要で日本語環境でも安定）
+  // 名称ラベルのデータ投入（全62区市町村。数値は含めない）。自宅/実家は slot 付き・sortKey 0 で最優先
+  // それ以外は人口の多い順に sortKey を振り、ズームアウト時は人口の多い区市町村から表示される
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !stats || !geo) return;
-    for (const mk of markersRef.current) mk.remove();
-    markersRef.current = [];
-    const top5 = [...stats.data.municipalities]
-      .map((m) => ({ m, v: indexOf(m, mode, metric) }))
-      .filter((x): x is { m: MuniStat; v: number } => x.v !== null)
-      .sort((a, b) => b.v - a.v)
-      .slice(0, 5);
-    for (const { m, v } of top5) {
-      const f = geo.features.find((x) => x.properties.code === m.code);
-      if (!f) continue;
-      const [[minX, minY], [maxX, maxY]] = bboxOf(f.geometry);
-      const el = document.createElement("div");
-      el.className = "map-label";
-      el.textContent = `${m.name} ${v.toFixed(1)}`;
-      el.setAttribute("aria-label", `${m.name} リスク指数 ${v.toFixed(1)}`);
-      el.addEventListener("click", () => setSelected(m.code));
-      const mk = new maplibregl.Marker({ element: el, anchor: "center" })
-        .setLngLat([(minX + maxX) / 2, (minY + maxY) / 2])
-        .addTo(map);
-      markersRef.current.push(mk);
-    }
+    const src = map.getSource("muni-labels") as maplibregl.GeoJSONSource | undefined;
+    if (!src) return;
+    const home = getRegion("home"), jikka = getRegion("jikka");
+    const popRank = new Map<number, number>(
+      [...stats.data.municipalities].sort((a, b) => b.popTotal - a.popTotal).map((m, i) => [m.code, i + 1]),
+    );
+    const features = geo.features.map((f) => {
+      const code = f.properties.code;
+      const slot = code === home ? "home" : code === jikka ? "jikka" : undefined;
+      const props: Record<string, unknown> = {
+        code,
+        name: statByCode.get(code)?.name ?? f.properties.name,
+        sortKey: slot ? 0 : (popRank.get(code) ?? 999),
+      };
+      if (slot) props.slot = slot;
+      return { type: "Feature" as const, properties: props, geometry: { type: "Point" as const, coordinates: labelPointOf(f.geometry) } };
+    });
+    src.setData({ type: "FeatureCollection", features });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, mode, metric, stats, geo]);
+  }, [mapReady, stats, geo, regionVersion]);
 
   // 選択ハイライト
   useEffect(() => {
@@ -299,10 +399,10 @@ export function MapPage() {
               );
             })()}
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button className="button-secondary" onClick={() => { setRegion("home", sel.code); alert(`${sel.name}を自宅に設定しました`); }}>
+              <button className="button-secondary" onClick={() => { setRegion("home", sel.code); setRegionVersion((v) => v + 1); alert(`${sel.name}を自宅に設定しました`); }}>
                 自宅に設定
               </button>
-              <button className="button-secondary" onClick={() => { setRegion("jikka", sel.code); alert(`${sel.name}を実家に設定しました`); }}>
+              <button className="button-secondary" onClick={() => { setRegion("jikka", sel.code); setRegionVersion((v) => v + 1); alert(`${sel.name}を実家に設定しました`); }}>
                 実家に設定
               </button>
             </div>
