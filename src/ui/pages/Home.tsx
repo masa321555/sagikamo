@@ -216,13 +216,17 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
 
       {error && (
         <div className="error-box" role="alert" style={{ marginTop: 12 }}>
-          <p style={{ margin: "0 0 8px" }}>{error}</p>
-          <button
-            className="button-secondary"
-            onClick={() => onJudged(getSampleJudgement(), true)}
-          >
-            サンプル判定を見る（サンプルデータ）
-          </button>
+          <p style={{ margin: 0 }}>{error}</p>
+          {/* サンプル判定は開発時と明示的なデモモード（?demo=1）のみ。本番の一般利用者には出さない */}
+          {(import.meta.env.DEV || isForcedDemo()) && (
+            <button
+              className="button-secondary"
+              style={{ marginTop: 8 }}
+              onClick={() => onJudged(getSampleJudgement(), true)}
+            >
+              サンプル判定を見る（サンプルデータ）
+            </button>
+          )}
         </div>
       )}
       {isForcedDemo() && !error && (
