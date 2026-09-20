@@ -125,7 +125,7 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
       )}
 
       <a className="phone-entry" href="#/phone">
-        <span className="phone-entry-title">📞 あやしい電話が来た方はこちら</span>
+        <span className="phone-entry-title">あやしい電話が来た方はこちら</span>
         <span className="phone-entry-sub">ボタンをえらぶだけでチェックできます<br />（文字入力は不要です）</span>
       </a>
 
@@ -134,10 +134,10 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
         {!image ? (
           <>
             <button type="button" className="attach-button" onClick={() => cameraInput.current?.click()}>
-              📷 カメラで撮って判定<br />（ハガキ・封筒・ほかの画面）
+              カメラで撮って判定<br />（ハガキ・封筒・ほかの画面）
             </button>
             <button type="button" className="attach-button" onClick={() => fileInput.current?.click()}>
-              🖼️ 保存ずみの写真・<br />スクリーンショットを選ぶ
+              保存ずみの写真・<br />スクリーンショットを選ぶ
             </button>
             <input
               ref={cameraInput}
@@ -179,11 +179,11 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
         />
         {isDictationSupported() ? (
           <button type="button" className={`mic-button${listening ? " listening" : ""}`} onClick={toggleDictation}>
-            {listening ? "🔴 聞き取り中…（タップで停止）" : <>🎤 話して伝える<br />（電話で言われた内容など）</>}
+            {listening ? "聞き取り中…（タップで停止）" : <>話して伝える<br />（電話で言われた内容など）</>}
           </button>
         ) : (
           <p className="source-note" style={{ margin: "6px 0 0" }}>
-            🎤 声で入力するには: 上の入力欄をタップして、キーボードの<strong>マイクボタン</strong>を押して話してください。
+            声で入力するには: 上の入力欄をタップして、キーボードの<strong>マイクボタン</strong>を押して話してください。
           </p>
         )}
       </div>
