@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { getStats, getTechniques } from "../api.ts";
 import { AddresseeField, Kamo, SourceNote } from "../components/common.tsx";
+import { Icon } from "../components/icons.tsx";
 import { generateMamoruCard, shareMamoruCard } from "../mamoru.ts";
 import type { StatsJson, TechniqueDef } from "../types.ts";
 
@@ -77,15 +78,16 @@ export function Zukan() {
             <div className="mamoru-preview">
               <img src={card.dataUrl} alt="まもるカードのプレビュー" />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button className="button-secondary" onClick={() => void shareMamoruCard(card.blob)}>📤 共有・保存する</button>
-                <button className="button-secondary" onClick={() => setCard(null)}>✕ 閉じる</button>
+                <button className="button-secondary" onClick={() => void shareMamoruCard(card.blob)}><Icon name="share" size={20} />共有・保存する</button>
+                <button className="button-secondary" onClick={() => setCard(null)}><Icon name="close" size={18} />閉じる</button>
               </div>
             </div>
           ) : (
             <div style={{ marginBottom: 0 }}>
               <AddresseeField value={addressee} onChange={setAddressee} />
               <button className="button-secondary" onClick={() => void makeCard(t)}>
-                💌 まもるカードを作る<br />（家族に知らせる）
+                <Icon name="mail" size={20} />
+                <span>まもるカードを作る<br />（家族に知らせる）</span>
               </button>
             </div>
           )}

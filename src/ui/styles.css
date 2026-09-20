@@ -64,10 +64,22 @@ main { flex: 1; padding: 16px; padding-bottom: 8px; }
 }
 .paste-area:focus { outline: 3px solid var(--navy); outline-offset: 1px; }
 .attach-block { margin-top: 12px; }
+/* 白カード型セカンダリボタン（写真・音声）: 実線1.5px＋影＋押下感で「押せる見た目」を統一 */
 .attach-button {
-  display: block; width: 100%; margin-top: 6px; padding: 12px; font-size: 1.0625rem; font-weight: 700;
-  background: #fff; color: var(--navy); border: 2px dashed var(--navy); border-radius: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  width: 100%; min-height: 56px; margin-top: 6px; padding: 10px 14px;
+  background: #fff; color: var(--navy); border: 1.5px solid var(--navy); border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(31, 58, 95, 0.15); cursor: pointer;
 }
+.attach-button:active, .mic-button:active, .choice-button:active, .button-secondary:active {
+  background: #e9eff6; box-shadow: none; transform: scale(0.98);
+}
+/* ボタン内ラベル: 1行目=太字16px、2行目=グレー12.5px補足 */
+.btn-text { flex: 1; min-width: 0; }
+.btn-label { display: block; font-size: 1rem; font-weight: 700; line-height: 1.35; }
+.btn-sub { display: block; font-size: 0.78125rem; font-weight: 400; color: var(--text-sub); margin-top: 2px; line-height: 1.35; }
+/* アイコン付き見出し */
+.icon-title { display: flex; align-items: center; gap: 8px; }
 .attach-preview { margin-top: 8px; }
 .attach-preview img {
   display: block; max-width: 160px; max-height: 200px; border: 1px solid var(--border);
@@ -88,24 +100,31 @@ main { flex: 1; padding: 16px; padding-bottom: 8px; }
 
 /* 電話チェックへの入口（ホーム最上部） */
 .phone-entry {
-  display: block; background: #fff; border: 3px solid var(--amber-border); border-radius: 14px;
+  display: flex; align-items: center; gap: 10px; background: #fff; border: 3px solid var(--amber-border); border-radius: 14px;
   padding: 14px; margin-bottom: 16px; text-decoration: none;
+  box-shadow: 0 1px 3px rgba(31, 58, 95, 0.15);
 }
+.phone-entry:active { background: #fdf8ec; box-shadow: none; transform: scale(0.98); }
+.phone-entry-body { flex: 1; min-width: 0; }
+.phone-entry-arrow { color: var(--amber-text); }
 .phone-entry-title { display: block; font-size: 1.25rem; font-weight: 800; color: var(--amber-text); }
 .phone-entry-sub { display: block; font-size: 1rem; color: var(--text-sub); margin-top: 4px; }
 
 /* 電話チェックの選択ボタン */
 .choice-button {
-  display: block; width: 100%; text-align: left; margin-bottom: 10px; padding: 14px;
+  display: block; width: 100%; min-height: 56px; text-align: left; margin-bottom: 10px; padding: 14px;
   font-size: 1.125rem; font-weight: 700; background: #fff; color: var(--navy);
-  border: 2px solid var(--navy); border-radius: 12px; cursor: pointer;
+  border: 1.5px solid var(--navy); border-radius: 12px; cursor: pointer;
+  box-shadow: 0 1px 3px rgba(31, 58, 95, 0.15);
 }
 .phone-progress { color: var(--text-sub); font-size: 1rem; margin: 0 0 4px; }
 
 /* 音声入力ボタン */
 .mic-button {
-  display: block; width: 100%; margin-top: 8px; padding: 12px; font-size: 1.0625rem; font-weight: 700;
-  background: #fff; color: var(--navy); border: 2px solid var(--navy); border-radius: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  width: 100%; min-height: 56px; margin-top: 8px; padding: 10px 14px;
+  background: #fff; color: var(--navy); border: 1.5px solid var(--navy); border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(31, 58, 95, 0.15); cursor: pointer;
 }
 .mic-button.listening { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-text); }
 
@@ -113,6 +132,7 @@ main { flex: 1; padding: 16px; padding-bottom: 8px; }
   width: 100%; margin-top: 12px; padding: 16px; font-size: 1.25rem; font-weight: 700;
   background: var(--navy); color: #fff; border: none; border-radius: 12px; cursor: pointer;
 }
+.judge-button:active:not(:disabled) { transform: scale(0.98); }
 .judge-button:disabled { background: #8b98a9; cursor: wait; }
 .first-copy { color: var(--text-sub); font-size: 1rem; margin: 8px 0 12px; }
 
@@ -128,7 +148,7 @@ main { flex: 1; padding: 16px; padding-bottom: 8px; }
 .summary-card { background: #fff; padding: 14px; }
 .summary-head { display: flex; align-items: flex-start; gap: 10px; }
 .risk-pill {
-  display: inline-block; padding: 4px 12px; border-radius: 999px; border: 2px solid;
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; border: 2px solid;
   font-size: 1.125rem; font-weight: 800;
 }
 .risk-pill.risk-high { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-text); }
@@ -161,8 +181,9 @@ main { flex: 1; padding: 16px; padding-bottom: 8px; }
 .action-item .action-desc { font-size: 1rem; }
 
 .button-secondary {
-  display: inline-block; padding: 12px 16px; border-radius: 10px; border: 2px solid var(--navy);
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--navy);
   color: var(--navy); background: #fff; font-weight: 700; font-size: 1.0625rem; cursor: pointer; text-decoration: none;
+  box-shadow: 0 1px 3px rgba(31, 58, 95, 0.15);
 }
 
 .region-select { font-size: 1.0625rem; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--text); }
@@ -178,7 +199,8 @@ label.field-label { font-size: 1rem; color: var(--text-sub); margin-right: 6px; 
   border-radius: 12px; padding: 12px 14px; box-shadow: 0 4px 16px rgba(31, 58, 95, 0.18); z-index: 2;
 }
 .sheet-close {
-  background: #fff; border: 2px solid var(--navy); color: var(--navy); border-radius: 8px;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #fff; border: 1.5px solid var(--navy); color: var(--navy); border-radius: 8px;
   font-size: 1rem; font-weight: 700; padding: 4px 10px; cursor: pointer;
 }
 /* 上位5区市町村の数値ラベル */
@@ -221,7 +243,7 @@ label.field-label { font-size: 1rem; color: var(--text-sub); margin-right: 6px; 
 }
 /* 開いているページ: 水色の背景＋ネイビー文字で現在地を明示（コントラスト比 約9:1） */
 .bottom-nav a.active { background: #d7e9fb; color: var(--navy-dark); font-weight: 800; }
-.bottom-nav .nav-icon { display: block; font-size: 1.25rem; }
+.bottom-nav .nav-icon { display: flex; justify-content: center; margin-bottom: 2px; }
 
 /* 判定中ローディング（白背景カード上にカモ） */
 .loading-kamo {

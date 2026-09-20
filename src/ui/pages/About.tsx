@@ -3,6 +3,7 @@
 // キャラクターは判定・結果画面と同じポーズを使い分け、白背景カード上にのみ配置する
 
 import { Kamo } from "../components/common.tsx";
+import { Icon } from "../components/icons.tsx";
 
 export function About() {
   return (
@@ -35,7 +36,7 @@ export function About() {
       <div className="card">
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
           <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>🔍 判定</p>
+            <p className="icon-title" style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}><Icon name="search" size={20} />判定</p>
             <p>
               AIが「どの手口に近いか」「危険度はどれくらいか」を根拠つきで見立てて、
               あなたの街での認知件数と、次にすべき行動までお伝えします。
@@ -56,7 +57,7 @@ export function About() {
       </div>
 
       <div className="card">
-        <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>🗾 マップ</p>
+        <p className="icon-title" style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}><Icon name="map" size={20} />マップ</p>
         <p style={{ marginBottom: 0 }}>
           東京都の62区市町村ごとに、詐欺の認知件数をもとにしたリスク指数を色分けした地図で見られます。
           指数は「全年代」と「高齢者」で切り替えられ、地域は一覧からもえらべます。
@@ -66,7 +67,7 @@ export function About() {
       </div>
 
       <div className="card">
-        <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>📖 図鑑</p>
+        <p className="icon-title" style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}><Icon name="book" size={20} />図鑑</p>
         <p style={{ marginBottom: 0 }}>
           ニセ警察詐欺・還付金詐欺・SNS型投資詐欺など、代表的な8つの手口を紹介しています。
           よくあるフレーズと「最初にすること」を知っておくだけでも、いざというときの備えになります。
@@ -74,7 +75,7 @@ export function About() {
       </div>
 
       <div className="card">
-        <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>📞 相談</p>
+        <p className="icon-title" style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}><Icon name="phone" size={20} />相談</p>
         <p style={{ marginBottom: 0 }}>
           「110（緊急）」「#9110（警察相談）」「188（消費者ホットライン）」の使い分けと、
           お住まいの区市町村の相談窓口をご案内します。ひとりで抱え込まず、早めの相談が一番の対策です。
@@ -83,7 +84,7 @@ export function About() {
 
       <div className="card" style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>💌 まもるカード</p>
+          <p className="icon-title" style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}><Icon name="mail" size={20} />まもるカード</p>
           <p style={{ marginBottom: 0 }}>
             判定結果や手口図鑑から、注意してほしいポイントをやさしい言葉と大きな文字でまとめた
             1枚の画像を作れます。LINEなどで送るだけで、離れて暮らすご家族に

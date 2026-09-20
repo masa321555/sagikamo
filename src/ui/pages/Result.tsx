@@ -4,13 +4,12 @@
 import { useEffect, useState } from "react";
 import { getStats, getTechniques } from "../api.ts";
 import { getRegion, setRegion, SLOT_LABELS, type RegionSlot } from "../region.ts";
-import { ActionList, AddresseeField, DemoBadge, Kamo, SourceNote } from "../components/common.tsx";
+import { ActionList, AddresseeField, DemoBadge, Kamo, RISK_ICON, SourceNote } from "../components/common.tsx";
+import { Icon } from "../components/icons.tsx";
 import { ACTION_DISPLAY, LOW_RISK_NOTICE, RISK_DISPLAY } from "../../lib/judge/templates.ts";
 import { isSpeakSupported, speak, stopSpeaking } from "../speech.ts";
 import { generateMamoruCard, shareMamoruCard } from "../mamoru.ts";
-import type { JudgeResponse, RiskLevel, StatsJson } from "../types.ts";
-
-const RISK_ICON: Record<RiskLevel, string> = { high: "⚠️", caution: "❕", low: "ℹ️" };
+import type { JudgeResponse, StatsJson } from "../types.ts";
 
 /** 読み上げ用テキストを定型文から組み立てる（表示と同じ内容のみ。断定表現なし） */
 function buildSpeechText(result: JudgeResponse): string {
@@ -75,7 +74,7 @@ export function Result({ result, isDemoJudgement }: { result: JudgeResponse; isD
         <div className="summary-head">
           <div style={{ minWidth: 0, flex: 1 }}>
             <span className={`risk-pill risk-${result.risk}`}>
-              <span aria-hidden="true">{RISK_ICON[result.risk]}</span> {riskInfo.label}
+              <Icon name={RISK_ICON[result.risk]} size={20} /> {riskInfo.label}
             </span>
             {result.risk !== "low" ? (
               <p className="summary-technique">{result.techniqueLabel}の型に近い特徴</p>
@@ -109,7 +108,7 @@ export function Result({ result, isDemoJudgement }: { result: JudgeResponse; isD
       {isSpeakSupported() && (
         <p style={{ margin: "0 0 12px" }}>
           <button type="button" className="button-secondary" onClick={toggleSpeak}>
-            {speaking ? "⏹ 読み上げを止める" : "🔊 結果を読み上げる"}
+            {speaking ? <><Icon name="stop" size={20} />読み上げを止める</> : <><Icon name="speaker" size={20} />結果を読み上げる</>}
           </button>
         </p>
       )}
@@ -167,7 +166,7 @@ export function Result({ result, isDemoJudgement }: { result: JudgeResponse; isD
 
       {result.risk !== "low" && (
         <div className="card" style={{ marginTop: 16 }}>
-          <h2 className="section-title" style={{ marginTop: 0 }}>💌 家族に知らせる（まもるカード）</h2>
+          <h2 className="section-title icon-title" style={{ marginTop: 0 }}><Icon name="mail" size={20} />家族に知らせる（まもるカード）</h2>
           <p className="source-note" style={{ marginTop: 0 }}>
             この判定結果を、やさしい言葉の1枚の画像にします。LINEなどでご家族に送って注意を伝えられます。
           </p>
@@ -203,7 +202,7 @@ export function Result({ result, isDemoJudgement }: { result: JudgeResponse; isD
                 })();
               }}
             >
-              {cardBusy ? "作成中…" : "💌 まもるカードを作る"}
+              <Icon name="mail" size={20} />{cardBusy ? "作成中…" : "まもるカードを作る"}
             </button>
             </>
           ) : (
@@ -211,9 +210,9 @@ export function Result({ result, isDemoJudgement }: { result: JudgeResponse; isD
               <img src={card.dataUrl} alt="まもるカードのプレビュー" />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button className="button-secondary" onClick={() => void shareMamoruCard(card.blob)}>
-                  📤 共有・保存する
+                  <Icon name="share" size={20} />共有・保存する
                 </button>
-                <button className="button-secondary" onClick={() => setCard(null)}>✕ 閉じる</button>
+                <button className="button-secondary" onClick={() => setCard(null)}><Icon name="close" size={18} />閉じる</button>
               </div>
             </div>
           )}

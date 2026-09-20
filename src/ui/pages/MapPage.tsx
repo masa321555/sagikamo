@@ -16,6 +16,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { getStats, getTowns } from "../api.ts";
 import { getRegion, setRegion, SLOT_LABELS, type RegionSlot } from "../region.ts";
 import { DemoBadge, SourceNote } from "../components/common.tsx";
+import { Icon } from "../components/icons.tsx";
 import type { MuniStat, StatsJson, TownsJson } from "../types.ts";
 
 type YearMode = "current" | "prev";
@@ -86,15 +87,45 @@ function labelPointOf(geom: { type: string; coordinates: unknown }): [number, nu
   return [(minX + maxX) / 2, (minY + maxY) / 2];
 }
 
-/** 絵文字をCanvasに描いてシンボルのアイコン画像にする（自宅/実家マーク用） */
-function emojiImage(emoji: string): ImageData {
-  const s = 40;
+/** 自宅/実家ピン画像: 白丸＋ネイビーの家アイコン（ラインスタイル。カラー絵文字は使わない）
+ *  filled=true（自宅）は塗りつぶし、false（実家）は線画で区別する */
+function housePinImage(filled: boolean): ImageData {
+  const s = 48;
   const c = document.createElement("canvas");
   c.width = s; c.height = s;
   const ctx = c.getContext("2d")!;
-  ctx.font = "30px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText(emoji, s / 2, s / 2 + 2);
+  ctx.beginPath();
+  ctx.arc(24, 24, 21, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#1f3a5f";
+  ctx.stroke();
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  if (filled) {
+    ctx.fillStyle = "#1f3a5f";
+    ctx.beginPath();
+    ctx.moveTo(24, 12);
+    ctx.lineTo(37, 24);
+    ctx.lineTo(33, 24);
+    ctx.lineTo(33, 35);
+    ctx.lineTo(15, 35);
+    ctx.lineTo(15, 24);
+    ctx.lineTo(11, 24);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(11, 24);
+    ctx.lineTo(24, 12);
+    ctx.lineTo(37, 24);
+    ctx.moveTo(15, 22);
+    ctx.lineTo(15, 35);
+    ctx.lineTo(33, 35);
+    ctx.lineTo(33, 22);
+    ctx.stroke();
+  }
   return ctx.getImageData(0, 0, s, s);
 }
 
@@ -160,8 +191,8 @@ export function MapPage() {
       });
 
       // 名称ラベル（点ソース。データは別effectで投入）
-      map.addImage("pin-home", emojiImage("🏠"), { pixelRatio: 2 });
-      map.addImage("pin-jikka", emojiImage("🏡"), { pixelRatio: 2 });
+      map.addImage("pin-home", housePinImage(true), { pixelRatio: 2 });
+      map.addImage("pin-jikka", housePinImage(false), { pixelRatio: 2 });
       map.addSource("muni-labels", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addLayer({
         id: "muni-label", type: "symbol", source: "muni-labels",
@@ -368,7 +399,7 @@ export function MapPage() {
           <div className="map-sheet" role="dialog" aria-label={`${sel.name}の詳細`}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ margin: 0, fontWeight: 800, fontSize: "1.125rem" }}>{sel.name}</p>
-              <button type="button" className="sheet-close" onClick={() => setSelected(null)} aria-label="閉じる">✕ 閉じる</button>
+              <button type="button" className="sheet-close" onClick={() => setSelected(null)} aria-label="閉じる"><Icon name="close" size={16} />閉じる</button>
             </div>
             <p style={{ margin: "4px 0 0" }}>
               リスク指数（{mode === "current" ? "当年" : "前年"}・{metric === "all" ? "全年代" : "高齢者"}）:

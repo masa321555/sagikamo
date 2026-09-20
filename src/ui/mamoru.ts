@@ -94,9 +94,20 @@ export async function generateMamoruCard(p: MamoruCardParams): Promise<{ blob: B
   // ---- ヘッダー ----
   ctx.fillStyle = NAVY;
   ctx.fillRect(0, 0, W, headerH);
+  // 封筒アイコン（絵文字は使わずCanvasの線画で描く）
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 4;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeRect(PAD, 40, 62, 46);
+  ctx.beginPath();
+  ctx.moveTo(PAD + 2, 44);
+  ctx.lineTo(PAD + 31, 68);
+  ctx.lineTo(PAD + 60, 44);
+  ctx.stroke();
   ctx.fillStyle = "#ffffff";
   ctx.font = font(56);
-  ctx.fillText("💌 まもるカード", PAD, 84);
+  ctx.fillText("まもるカード", PAD + 84, 84);
   ctx.font = font(34, false);
   ctx.textAlign = "right";
   ctx.fillText("サギカモ", W - PAD, 84);
@@ -128,11 +139,29 @@ export async function generateMamoruCard(p: MamoruCardParams): Promise<{ blob: B
   ctx.roundRect(PAD - 16, y - 10, CONTENT_W + 32, riskH - 30, 20);
   ctx.fill();
   ctx.stroke();
+  // 注意アイコン（三角＋！の線画）
+  ctx.strokeStyle = AMBER_TEXT;
+  ctx.lineWidth = 6;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  const tx = PAD + 8, ty = y + 22;
+  ctx.beginPath();
+  ctx.moveTo(tx + 27, ty);
+  ctx.lineTo(tx, ty + 50);
+  ctx.lineTo(tx + 54, ty + 50);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(tx + 27, ty + 18);
+  ctx.lineTo(tx + 27, ty + 32);
+  ctx.moveTo(tx + 27, ty + 42);
+  ctx.lineTo(tx + 27.5, ty + 42);
+  ctx.stroke();
   ctx.fillStyle = AMBER_TEXT;
+  const riskTitle = p.riskLabel ? `${p.riskLabel}: ${p.title}` : p.title;
   ctx.font = font(60);
-  const riskTitle = p.riskLabel ? `⚠️ ${p.riskLabel}: ${p.title}` : `⚠️ ${p.title}`;
-  ctx.font = ctx.measureText(riskTitle).width > CONTENT_W ? font(48) : font(60);
-  ctx.fillText(riskTitle, PAD + 8, y + 70);
+  ctx.font = ctx.measureText(riskTitle).width > CONTENT_W - 78 ? font(48) : font(60);
+  ctx.fillText(riskTitle, PAD + 8 + 78, y + 70);
   y += riskH + 10;
 
   // ---- 見出し ----
@@ -166,9 +195,22 @@ export async function generateMamoruCard(p: MamoruCardParams): Promise<{ blob: B
   ctx.beginPath();
   ctx.roundRect(PAD - 16, y, CONTENT_W + 32, actionLines.length * 60 + 90, 20);
   ctx.fill();
+  // チェックアイコン（丸＋✓の線画）
+  ctx.strokeStyle = GREEN_DARK;
+  ctx.lineWidth = 5;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(PAD + 28, y + 42, 20, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(PAD + 19, y + 43);
+  ctx.lineTo(PAD + 26, y + 50);
+  ctx.lineTo(PAD + 38, y + 34);
+  ctx.stroke();
   ctx.fillStyle = GREEN_DARK;
   ctx.font = font(40);
-  ctx.fillText("✅ こまったら", PAD + 8, y + 56);
+  ctx.fillText("こまったら", PAD + 60, y + 56);
   ctx.font = font(42);
   let ay = y + 116;
   for (const line of actionLines) {

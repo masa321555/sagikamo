@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { getSampleJudgement, getStats, isForcedDemo, postJudge, type JudgeImagePayload } from "../api.ts";
 import { isDictationSupported, startDictation, type DictationHandle } from "../speech.ts";
 import { DemoBadge, Kamo, LoadingKamo } from "../components/common.tsx";
+import { Icon } from "../components/icons.tsx";
 import type { JudgeResponse, StatsJson } from "../types.ts";
 
 /** 送信前に画像を縮小してJPEG化する（長辺1568px。通信量とAPIコストを抑える） */
@@ -125,8 +126,11 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
       )}
 
       <a className="phone-entry" href="#/phone">
-        <span className="phone-entry-title">あやしい電話が来た方はこちら</span>
-        <span className="phone-entry-sub">ボタンをえらぶだけでチェックできます<br />（文字入力は不要です）</span>
+        <span className="phone-entry-body">
+          <span className="phone-entry-title">あやしい電話が来た方はこちら</span>
+          <span className="phone-entry-sub">ボタンをえらぶだけでチェックできます<br />（文字入力は不要です）</span>
+        </span>
+        <span className="phone-entry-arrow"><Icon name="chevronRight" size={28} /></span>
       </a>
 
       <div className="attach-block" style={{ marginTop: 0 }}>
@@ -134,10 +138,17 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
         {!image ? (
           <>
             <button type="button" className="attach-button" onClick={() => cameraInput.current?.click()}>
-              カメラで撮って判定<br />（ハガキ・封筒・ほかの画面）
+              <Icon name="camera" size={28} />
+              <span className="btn-text">
+                <span className="btn-label">カメラで撮って判定</span>
+                <span className="btn-sub">（ハガキ・封筒・ほかの画面）</span>
+              </span>
             </button>
             <button type="button" className="attach-button" onClick={() => fileInput.current?.click()}>
-              保存ずみの写真・<br />スクリーンショットを選ぶ
+              <Icon name="image" size={28} />
+              <span className="btn-text">
+                <span className="btn-label">保存ずみの写真・スクリーンショットを選ぶ</span>
+              </span>
             </button>
             <input
               ref={cameraInput}
@@ -163,7 +174,7 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
         ) : (
           <div className="attach-preview">
             <img src={image.previewUrl} alt="添付した画像のプレビュー" />
-            <button type="button" className="button-secondary" onClick={clearImage}>✕ 画像を取り消す</button>
+            <button type="button" className="button-secondary" onClick={clearImage}><Icon name="close" size={18} />画像を取り消す</button>
           </div>
         )}
       </div>
@@ -179,7 +190,17 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
         />
         {isDictationSupported() ? (
           <button type="button" className={`mic-button${listening ? " listening" : ""}`} onClick={toggleDictation}>
-            {listening ? "聞き取り中…（タップで停止）" : <>話して伝える<br />（電話で言われた内容など）</>}
+            <Icon name="mic" size={28} />
+            <span className="btn-text">
+              {listening ? (
+                <span className="btn-label">聞き取り中…（タップで停止）</span>
+              ) : (
+                <>
+                  <span className="btn-label">話して伝える</span>
+                  <span className="btn-sub">（電話で言われた内容など）</span>
+                </>
+              )}
+            </span>
           </button>
         ) : (
           <p className="source-note" style={{ margin: "6px 0 0" }}>

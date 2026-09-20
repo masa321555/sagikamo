@@ -9,6 +9,7 @@ import { Consult } from "./pages/Consult.tsx";
 import { About } from "./pages/About.tsx";
 import { PhoneCheck } from "./pages/PhoneCheck.tsx";
 import { isForcedDemo } from "./api.ts";
+import { Icon } from "./components/icons.tsx";
 import type { JudgeResponse } from "./types.ts";
 
 type Route = "home" | "result" | "map" | "zukan" | "consult" | "about" | "phone";
@@ -82,16 +83,16 @@ export function App() {
       </div>
       <nav className="bottom-nav" aria-label="メインナビゲーション">
         <a href="#/" className={route === "home" || route === "result" ? "active" : ""}>
-          <span className="nav-icon" aria-hidden="true">🔍</span>判定
+          <span className="nav-icon" aria-hidden="true"><Icon name="search" size={22} /></span>判定
         </a>
         <a href="#/map" className={route === "map" ? "active" : ""}>
-          <span className="nav-icon" aria-hidden="true">🗾</span>マップ
+          <span className="nav-icon" aria-hidden="true"><Icon name="map" size={22} /></span>マップ
         </a>
         <a href="#/zukan" className={route === "zukan" ? "active" : ""}>
-          <span className="nav-icon" aria-hidden="true">📖</span>図鑑
+          <span className="nav-icon" aria-hidden="true"><Icon name="book" size={22} /></span>図鑑
         </a>
         <a href="#/consult" className={route === "consult" ? "active" : ""}>
-          <span className="nav-icon" aria-hidden="true">📞</span>相談
+          <span className="nav-icon" aria-hidden="true"><Icon name="phone" size={22} /></span>相談
         </a>
       </nav>
     </div>

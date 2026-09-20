@@ -3,9 +3,10 @@
 
 import { useState } from "react";
 import { ACTION_DISPLAY, LOW_RISK_NOTICE, RISK_DISPLAY } from "../../lib/judge/templates.ts";
+import { Icon, type IconName } from "./icons.tsx";
 import type { ActionId, RiskLevel, SourceInfo } from "../types.ts";
 
-const RISK_ICON: Record<RiskLevel, string> = { high: "⚠️", caution: "❕", low: "ℹ️" };
+export const RISK_ICON: Record<RiskLevel, IconName> = { high: "alert", caution: "alertCircle", low: "info" };
 const ACTION_HREF: Partial<Record<ActionId, string>> = {
   consult_9110: "tel:%239110",
   consult_188: "tel:188",
@@ -95,7 +96,7 @@ export function RiskBanner({ risk }: { risk: RiskLevel }) {
   return (
     <div className={`risk-banner risk-${risk}`} role="alert">
       <div className="risk-label">
-        <span aria-hidden="true">{RISK_ICON[risk]}</span>
+        <Icon name={RISK_ICON[risk]} size={24} />
         {d.label}
       </div>
       {d.headline && <div className="risk-headline">{d.headline}</div>}
