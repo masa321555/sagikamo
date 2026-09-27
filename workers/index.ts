@@ -5,6 +5,7 @@
 
 import { AnthropicLlmClient } from "../src/lib/llm/anthropic.ts";
 import { createJudgeContext, judgeText, techniqueLabel, type JudgeContext } from "../src/lib/judge/judge.ts";
+import { handleLineWebhook } from "./line.ts";
 import techniquesJson from "../data/config/techniques.json";
 import statsJson from "../data/cache/stats.json";
 import contactsJson from "../data/cache/contacts.json";
@@ -28,8 +29,15 @@ interface Env {
   ANTHROPIC_API_KEY: string; // wrangler secret
   LLM_MODEL?: string;
   LLM_EFFORT?: "low" | "medium" | "high";
+  LINE_CHANNEL_SECRET?: string; // wrangler secret（LINE Messaging API）
+  LINE_CHANNEL_ACCESS_TOKEN?: string; // wrangler secret（LINE Messaging API）
   ASSETS: { fetch(request: Request): Promise<Response> };
   RL_DO?: DONamespace; // レート制限カウンタ
+}
+
+// ExecutionContext の最小型定義（@cloudflare/workers-types非依存）
+interface ExecutionCtx {
+  waitUntil(promise: Promise<unknown>): void;
 }
 
 /** レート制限カウンタ（Durable Object）。1分窓のリクエスト数を正確に数える */
@@ -69,6 +77,17 @@ function json(status: number, body: unknown): Response {
 }
 
 let judgeCtx: JudgeContext | null = null;
+
+/** 判定コンテキストのシングルトン（/api/judge とLINE Webhookで共用） */
+function getJudgeCtx(env: Env): JudgeContext {
+  if (!judgeCtx) {
+    judgeCtx = createJudgeContext(
+      new AnthropicLlmClient({ apiKey: env.ANTHROPIC_API_KEY, model: env.LLM_MODEL, effort: env.LLM_EFFORT }),
+      techniquesJson,
+    );
+  }
+  return judgeCtx;
+}
 
 async function handleJudge(request: Request, env: Env): Promise<Response> {
   // レート制限（本文の検証より先に実施し、不正リクエストの連打も遮断する）
@@ -111,18 +130,13 @@ async function handleJudge(request: Request, env: Env): Promise<Response> {
     return json(400, { error: "文面または画像を入力してください" });
   }
 
-  if (!judgeCtx) {
-    judgeCtx = createJudgeContext(
-      new AnthropicLlmClient({ apiKey: env.ANTHROPIC_API_KEY, model: env.LLM_MODEL, effort: env.LLM_EFFORT }),
-      techniquesJson,
-    );
-  }
-  const result = await judgeText(judgeCtx, { text, image });
-  return json(200, { ...result, techniqueLabel: techniqueLabel(judgeCtx.techniques, result.technique) });
+  const ctx = getJudgeCtx(env);
+  const result = await judgeText(ctx, { text, image });
+  return json(200, { ...result, techniqueLabel: techniqueLabel(ctx.techniques, result.technique) });
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionCtx): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/")) {
       try {
@@ -131,6 +145,16 @@ export default {
         if (url.pathname === "/api/towns" && request.method === "GET") return json(200, townsJson);
         if (url.pathname === "/api/techniques" && request.method === "GET") return json(200, techniquesJson);
         if (url.pathname === "/api/judge" && request.method === "POST") return await handleJudge(request, env);
+        if (url.pathname === "/api/line/webhook" && request.method === "POST") {
+          return await handleLineWebhook(request, env, ctx, {
+            judge: async (text) => {
+              const jc = getJudgeCtx(env);
+              const result = await judgeText(jc, { text });
+              return { ...result, techniqueLabel: techniqueLabel(jc.techniques, result.technique) };
+            },
+            checkRateLimit: (name, limit) => checkRateLimit(env, name, limit),
+          });
+        }
         return json(404, { error: "not found" });
       } catch (e) {
         // 入力文面がエラーメッセージ経由で漏れないよう定型文のみ返す

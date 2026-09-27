@@ -14,6 +14,24 @@
   "durable_objects": {
     "bindings": [{ "name": "RL_DO", "class_name": "JudgeRateLimiter" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["JudgeRateLimiter"] }]
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["JudgeRateLimiter"] }],
   // シークレット: npx wrangler secret put ANTHROPIC_API_KEY で登録（コミット禁止）
+  // LINE連携（Phase L）: LINE_CHANNEL_SECRET / LINE_CHANNEL_ACCESS_TOKEN も同様にsecretで登録
+
+  // ステージング環境（Phase L検証用）。デプロイ: npm run deploy:staging
+  // シークレットは環境ごとに別登録: npx wrangler secret put <NAME> --env staging
+  // ※assets / durable_objects はトップレベルを継承しないため再定義する
+  "env": {
+    "staging": {
+      "name": "sagikamo-staging",
+      "assets": {
+        "directory": "./dist",
+        "binding": "ASSETS",
+        "not_found_handling": "single-page-application"
+      },
+      "durable_objects": {
+        "bindings": [{ "name": "RL_DO", "class_name": "JudgeRateLimiter" }]
+      }
+    }
+  }
 }

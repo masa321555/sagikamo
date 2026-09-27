@@ -12,7 +12,8 @@
     "dev": "vite",
     "sync-maplibre": "cp node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs public/maplibre/",
     "build": "npm run sync-maplibre && vite build",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:staging": "npm run build && wrangler deploy --env staging"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
