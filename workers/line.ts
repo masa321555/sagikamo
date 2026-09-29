@@ -95,15 +95,8 @@ function showLoading(accessToken: string, chatId: string): Promise<void> {
 }
 
 // ---- 定型メッセージ（確定文言。断定表現なし） ----
-const WELCOME_TEXT = [
-  "友だち追加ありがとうございます。サギカモです。",
-  "",
-  "あやしいメール・SMS・LINE・ハガキの文面を、このトークにそのまま送ってください。",
-  "AIが「どの手口に近いか」を見立てて、東京都の実データと次にすることをお返しします。",
-  "",
-  "※判定はAIによる見立てで、断定ではありません。",
-  "※送られた文面は判定後すぐに破棄し、保存しません。",
-].join("\n");
+// 友だち追加時の挨拶はLINE公式アカウントの「挨拶メッセージ」機能に一本化
+// （プラットフォーム側から確実に届くため。Botはfollowイベントに応答しない）
 
 const NON_TEXT_GUIDE = [
   "文面をテキストで送ってください（コピーして貼り付けでOKです）。",
@@ -239,10 +232,6 @@ async function processEvent(event: LineEvent, accessToken: string, deps: LineDep
   const replyToken = event.replyToken;
   if (!replyToken) return;
 
-  if (event.type === "follow") {
-    await replyText(accessToken, replyToken, WELCOME_TEXT);
-    return;
-  }
   if (event.type !== "message" || !event.message) return;
 
   if (event.message.type !== "text" || typeof event.message.text !== "string") {
