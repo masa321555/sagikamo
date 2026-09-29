@@ -147,9 +147,9 @@ export default {
         if (url.pathname === "/api/judge" && request.method === "POST") return await handleJudge(request, env);
         if (url.pathname === "/api/line/webhook" && request.method === "POST") {
           return await handleLineWebhook(request, env, ctx, {
-            judge: async (text) => {
+            judge: async (input) => {
               const jc = getJudgeCtx(env);
-              const result = await judgeText(jc, { text });
+              const result = await judgeText(jc, input);
               return { ...result, techniqueLabel: techniqueLabel(jc.techniques, result.technique) };
             },
             checkRateLimit: (name, limit) => checkRateLimit(env, name, limit),

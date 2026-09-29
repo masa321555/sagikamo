@@ -16,9 +16,11 @@ const APP_URL = "https://sagikamo.sagikanchi.workers.dev";
 const RL_USER_LIMIT = 6; // 6回/分
 const RL_GLOBAL_LIMIT = 30; // 全体 30回/分（/api/judge と共通の global 枠）
 
+export type JudgeImage = { mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif"; dataBase64: string };
+
 export interface LineDeps {
-  /** 既存の判定パイプライン（workers/index.ts の judgeCtx を共用） */
-  judge: (text: string) => Promise<{
+  /** 既存の判定パイプライン（workers/index.ts の judgeCtx を共用）。テキスト・画像とも対応 */
+  judge: (input: { text: string; image?: JudgeImage }) => Promise<{
     risk: RiskLevel;
     techniqueLabel: string;
     evidence: string[];
@@ -37,7 +39,7 @@ interface LineEvent {
   type: string;
   replyToken?: string;
   source?: { userId?: string };
-  message?: { type: string; text?: string };
+  message?: { type: string; id?: string; text?: string };
 }
 
 // ---- 署名検証（X-Line-Signature = base64(HMAC-SHA256(channel secret, body)) ） ----
@@ -99,9 +101,12 @@ function showLoading(accessToken: string, chatId: string): Promise<void> {
 // （プラットフォーム側から確実に届くため。Botはfollowイベントに応答しない）
 
 const NON_TEXT_GUIDE = [
-  "文面をテキストで送ってください（コピーして貼り付けでOKです）。",
-  `写真・スクリーンショットでの判定はWebアプリでどうぞ → ${APP_URL}`,
+  "あやしい文面は、テキスト（コピーして貼り付け）か写真・スクリーンショットで送ってください。",
+  `地域ごとのデータや手口図鑑はWebアプリでどうぞ → ${APP_URL}`,
 ].join("\n");
+
+const IMAGE_FETCH_ERROR_TEXT = "画像を読み込めませんでした。もう一度送るか、文面をテキストで貼り付けて送ってください。";
+const IMAGE_TOO_LARGE_TEXT = "画像が大きすぎて読み込めませんでした（5MBまで）。スクリーンショットなど小さめの画像でお試しください。";
 
 const RATE_LIMIT_TEXT = "アクセスが集中しています。1分ほど待ってから、もう一度お試しください。";
 const ERROR_TEXT = "判定サービスでエラーが発生しました。しばらくしてからもう一度お試しください。";
@@ -227,6 +232,39 @@ export function buildJudgeFlex(result: {
   };
 }
 
+// ---- 画像メッセージの取得（LINEコンテンツAPI） ----
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB（Webアプリの /api/judge と同水準）
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let s = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    s += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(s);
+}
+
+/** 受信画像をメモリ上に取得してbase64化する。保存はせず、判定後に破棄される（CLAUDE.mdルール2） */
+async function fetchMessageImage(
+  accessToken: string,
+  messageId: string,
+): Promise<{ ok: true; image: JudgeImage } | { ok: false; reason: "fetch" | "too_large" }> {
+  const res = await fetch(`https://api-data.line.me/v2/bot/message/${messageId}/content`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) {
+    console.error(`[line] content fetch failed: HTTP ${res.status}`);
+    return { ok: false, reason: "fetch" };
+  }
+  const contentType = (res.headers.get("content-type") ?? "").split(";")[0].trim();
+  const mediaType = ALLOWED_IMAGE_TYPES.find((t) => t === contentType);
+  if (!mediaType) return { ok: false, reason: "fetch" };
+  const buf = new Uint8Array(await res.arrayBuffer());
+  if (buf.length > MAX_IMAGE_BYTES) return { ok: false, reason: "too_large" };
+  return { ok: true, image: { mediaType, dataBase64: bytesToBase64(buf) } };
+}
+
 // ---- イベント処理本体 ----
 async function processEvent(event: LineEvent, accessToken: string, deps: LineDeps): Promise<void> {
   const replyToken = event.replyToken;
@@ -234,12 +272,14 @@ async function processEvent(event: LineEvent, accessToken: string, deps: LineDep
 
   if (event.type !== "message" || !event.message) return;
 
-  if (event.message.type !== "text" || typeof event.message.text !== "string") {
+  const isText = event.message.type === "text" && typeof event.message.text === "string";
+  const isImage = event.message.type === "image" && typeof event.message.id === "string";
+  if (!isText && !isImage) {
     await replyText(accessToken, replyToken, NON_TEXT_GUIDE);
     return;
   }
-  const text = event.message.text;
-  if (text.trim().length === 0) return;
+  const text = isText ? (event.message.text as string) : "";
+  if (isText && text.trim().length === 0) return;
   if (text.length > 8000) {
     await replyText(accessToken, replyToken, TOO_LONG_TEXT);
     return;
@@ -259,8 +299,19 @@ async function processEvent(event: LineEvent, accessToken: string, deps: LineDep
 
   if (userId) await showLoading(accessToken, userId);
 
+  // 画像はLINEコンテンツAPIから取得（メモリ上のみ。返信後に破棄）
+  let image: JudgeImage | undefined;
+  if (isImage) {
+    const fetched = await fetchMessageImage(accessToken, event.message.id as string);
+    if (!fetched.ok) {
+      await replyText(accessToken, replyToken, fetched.reason === "too_large" ? IMAGE_TOO_LARGE_TEXT : IMAGE_FETCH_ERROR_TEXT);
+      return;
+    }
+    image = fetched.image;
+  }
+
   try {
-    const result = await deps.judge(text);
+    const result = await deps.judge({ text, image });
     await replyMessages(accessToken, replyToken, [buildJudgeFlex(result)]);
   } catch (e) {
     // 受信本文がエラーメッセージ経由で漏れないよう定型文のみ（ログも同様）
