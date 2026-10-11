@@ -13,7 +13,7 @@ import type { MapLayerMouseEvent } from "maplibre-gl";
 // public/maplibre/ に同梱したWorkerファイルを明示指定する（npm run sync-maplibre で更新）
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 import "maplibre-gl/dist/maplibre-gl.css";
-import { getStats, getTowns } from "../api.ts";
+import { getStats, getTechniques, getTowns } from "../api.ts";
 import { getRegion, setRegion, SLOT_LABELS, type RegionSlot } from "../region.ts";
 import { DemoBadge, SourceNote } from "../components/common.tsx";
 import { Icon } from "../components/icons.tsx";
@@ -25,6 +25,12 @@ type MetricMode = "senior" | "all"; // 高齢者1万人あたり ／ 都民1万�
 // 色は白→ネイビー系の段階（色覚多様性に配慮し単色相の濃淡＋凡例に数値）
 const CLASS_COLORS = ["#e8eef5", "#b9cbe0", "#7f9cc0", "#41628f", "#1f3a5f"];
 const NO_DATA_COLOR = "#c9c9c9";
+
+// サギカモ自身の匿名統計（/api/counts。5件未満のセルはサーバー側でnullに伏せられている）
+interface CountsJson {
+  month: string;
+  rows: { ward: string; technique: string; risk: string; n: number | null }[];
+}
 
 interface GeoFeature {
   type: "Feature";
@@ -144,9 +150,16 @@ export function MapPage() {
   const [mapReady, setMapReady] = useState(false);
   const [regionVersion, setRegionVersion] = useState(0); // 自宅/実家の設定変更をラベルに反映するためのカウンタ
 
+  const [counts, setCounts] = useState<CountsJson | null>(null);
+
   useEffect(() => {
     getStats().then(setStats);
     getTowns().then(setTowns);
+    // サギカモ集計（取得できない環境ではセクションごと非表示にする）
+    fetch("/api/counts")
+      .then((r) => (r.ok ? (r.json() as Promise<CountsJson>) : null))
+      .then((c) => setCounts(c))
+      .catch(() => setCounts(null));
     fetch("/map/tokyo_municipalities.geojson")
       .then((r) => { if (!r.ok) throw new Error(`境界データ取得失敗 HTTP ${r.status}`); return r.json(); })
       .then(setGeo)
@@ -426,6 +439,37 @@ export function MapPage() {
                       <li key={t.name}>{t.name} — {t.sagi.toLocaleString()}件</li>
                     ))}
                   </ol>
+                </div>
+              );
+            })()}
+            {counts && (() => {
+              // 今月の相談傾向（サギカモ自身の匿名集計）。手口別に可視セルを合算してトップ3
+              const rows = counts.rows.filter((r) => r.ward === String(sel.code));
+              const byTech = new Map<string, number>();
+              let suppressed = false;
+              for (const r of rows) {
+                if (r.n === null) suppressed = true;
+                else byTech.set(r.technique, (byTech.get(r.technique) ?? 0) + r.n);
+              }
+              const top3 = [...byTech.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+              const techName = (id: string) => getTechniques().techniques.find((t) => t.id === id)?.name ?? "判別できない型";
+              return (
+                <div style={{ marginTop: 8 }}>
+                  <p style={{ margin: 0, fontWeight: 700 }}>今月の相談傾向（サギカモ集計）</p>
+                  {top3.length > 0 ? (
+                    <ol style={{ margin: "2px 0 0", paddingLeft: "1.4em" }}>
+                      {top3.map(([id, n]) => (
+                        <li key={id}>{techName(id)} — {n.toLocaleString()}件</li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="source-note" style={{ margin: "2px 0 0" }}>
+                      {suppressed ? "まだ件数が少ないため非表示（5件未満）" : "この地域の記録はまだありません"}
+                    </p>
+                  )}
+                  <p className="source-note" style={{ margin: "2px 0 0" }}>
+                    警視庁: 認知件数（被害後）／サギカモ: 相談件数（被害前）。性質の異なる数値です。
+                  </p>
                 </div>
               );
             })()}

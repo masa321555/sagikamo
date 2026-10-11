@@ -54,3 +54,24 @@ npm run deploy          # ビルド＆Cloudflareへデプロイ
 - 判定はAIによる「見立て」であり、詐欺かどうかを断定するものではありません
 - 統計値はすべて出典付きの公開データに基づきます（画面に出典・取得日を表示）
 - 相談窓口: 110（緊急）／#9110（警察相談専用電話）／188（消費者ホットライン）
+
+## 匿名統計カウンタ（Phase 統計）
+
+判定のたびに「月×区市町村×手口×危険度×チャネル」の件数だけをD1に加算します（本文・userId等は保存しません）。
+
+- 集計API: `GET /api/counts?month=YYYY-MM`（5件未満のセルは `n: null` に抑制）／`GET /api/counts.csv`（Excel対応CSV）／`GET /api/counts/export`（要 `Authorization: Bearer <STATS_ADMIN_TOKEN>`・抑制なし）
+- 必要なシークレット:
+  ```sh
+  npx wrangler secret put WARD_SALT --env staging          # LINE userIdハッシュ用（本番は --env なし）
+  npx wrangler secret put STATS_ADMIN_TOKEN --env staging  # export認証用
+  ```
+- D1マイグレーション適用:
+  ```sh
+  npx wrangler d1 migrations apply sagikamo-stats-staging --env staging --remote
+  npx wrangler d1 migrations apply sagikamo-stats --remote   # 本番
+  ```
+- 手動確認:
+  ```sh
+  npx wrangler d1 execute sagikamo-stats-staging --env staging --remote \
+    --command "SELECT ym, ward, technique, risk, SUM(n) FROM counts GROUP BY 1,2,3,4"
+  ```

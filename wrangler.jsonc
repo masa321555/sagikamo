@@ -15,6 +15,17 @@
     "bindings": [{ "name": "RL_DO", "class_name": "JudgeRateLimiter" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["JudgeRateLimiter"] }],
+  // 匿名統計カウンタ（月×区×手口×危険度×チャネルの件数のみ。本文・ID類は保存しない）
+  "d1_databases": [
+    {
+      "binding": "STATS_DB",
+      "database_name": "sagikamo-stats",
+      "database_id": "283db8f3-da02-4e82-b882-cbf460eec49c",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // LINEユーザーの地域設定（キーはsalt付きハッシュ。userId生値・本文は保存しない）
+  "kv_namespaces": [{ "binding": "WARD_KV", "id": "ae72655034a64a82a396785998071275" }],
   // シークレット: npx wrangler secret put ANTHROPIC_API_KEY で登録（コミット禁止）
   // LINE連携（Phase L）: LINE_CHANNEL_SECRET / LINE_CHANNEL_ACCESS_TOKEN も同様にsecretで登録
 
@@ -31,7 +42,16 @@
       },
       "durable_objects": {
         "bindings": [{ "name": "RL_DO", "class_name": "JudgeRateLimiter" }]
-      }
+      },
+      "d1_databases": [
+        {
+          "binding": "STATS_DB",
+          "database_name": "sagikamo-stats-staging",
+          "database_id": "49211f04-3c09-4538-8448-4c082232f7c0",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "kv_namespaces": [{ "binding": "WARD_KV", "id": "c66d3bbdf1bd400886adc3477a1f2a20" }]
     }
   }
 }

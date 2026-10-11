@@ -22,12 +22,18 @@ export interface LineDeps {
   /** 既存の判定パイプライン（workers/index.ts の judgeCtx を共用）。テキスト・画像とも対応 */
   judge: (input: { text: string; image?: JudgeImage }) => Promise<{
     risk: RiskLevel;
+    technique: string;
     techniqueLabel: string;
     evidence: string[];
     actions: ActionId[];
   }>;
   /** 既存の Durable Objects レート制限 */
   checkRateLimit: (name: string, limit: number) => Promise<boolean>;
+  /** 地域設定の取得・保存（KV。キーはsalt付きハッシュ。userId生値は保存しない） */
+  getWard: (userId: string) => Promise<string | null>;
+  setWard: (userId: string, code: string) => Promise<void>;
+  /** 匿名統計の加算（分類値のみ。本文は渡せない設計） */
+  recordStat: (rec: { ward: string; technique: string; risk: RiskLevel }) => Promise<void>;
 }
 
 interface ExecutionCtxLike {
@@ -40,6 +46,7 @@ interface LineEvent {
   replyToken?: string;
   source?: { userId?: string };
   message?: { type: string; id?: string; text?: string };
+  postback?: { data?: string };
 }
 
 // ---- 署名検証（X-Line-Signature = base64(HMAC-SHA256(channel secret, body)) ） ----
@@ -109,6 +116,8 @@ const IMAGE_FETCH_ERROR_TEXT = "画像を読み込めませんでした。もう
 const IMAGE_TOO_LARGE_TEXT = "画像が大きすぎて読み込めませんでした（5MBまで）。スクリーンショットなど小さめの画像でお試しください。";
 
 const RATE_LIMIT_TEXT = "アクセスが集中しています。1分ほど待ってから、もう一度お試しください。";
+const STATS_NOTICE = "※判定結果の分類だけを統計として記録します。文面は保存しません。";
+const WARD_HINT = "「地域設定」と送ると、お住まいの区市町村を設定できます（任意）。地域は統計の分類だけに使い、文面とは結び付けません。";
 const ERROR_TEXT = "判定サービスでエラーが発生しました。しばらくしてからもう一度お試しください。";
 const TOO_LONG_TEXT = "文面が長すぎます（8000文字まで）。あやしい部分を中心に送ってください。";
 
@@ -220,7 +229,7 @@ export function buildJudgeFlex(result: {
           },
           {
             type: "text",
-            text: "送られた文面は判定後に破棄され、保存されません。",
+            text: `送られた文面は判定後に破棄され、保存されません。${STATS_NOTICE}`,
             size: "xxs",
             color: GRAY,
             wrap: true,
@@ -230,6 +239,85 @@ export function buildJudgeFlex(result: {
       },
     },
   };
+}
+
+// ---- 地域設定（クイックリプライ2段階: エリア → 区市町村） ----
+// クイックリプライは最大13件のため、62区市町村を5エリアに分割する
+const MUNIS = (statsJson as unknown as { municipalities: { code: number; name: string }[] }).municipalities;
+
+function wardGroups(): { id: string; label: string; items: { code: number; name: string }[] }[] {
+  const wards = MUNIS.filter((m) => m.code < 13200);
+  const cities = MUNIS.filter((m) => m.code >= 13200 && m.code < 13300);
+  const towns = MUNIS.filter((m) => m.code >= 13300);
+  return [
+    { id: "k1", label: "23区（前半）", items: wards.slice(0, 12) },
+    { id: "k2", label: "23区（後半）", items: wards.slice(12) },
+    { id: "s1", label: "市部（前半）", items: cities.slice(0, 13) },
+    { id: "s2", label: "市部（後半）", items: cities.slice(13) },
+    { id: "t", label: "町村部・島しょ", items: towns },
+  ];
+}
+
+const WARD_SET_TRIGGER = /^(地域設定|地域を設定|区を設定)$/;
+
+function quickReplyMessage(text: string, items: { label: string; data: string }[]): unknown {
+  return {
+    type: "text",
+    text,
+    quickReply: {
+      items: items.map((i) => ({
+        type: "action",
+        action: { type: "postback", label: i.label, data: i.data, displayText: i.label },
+      })),
+    },
+  };
+}
+
+function areaQuickReply(): unknown {
+  return quickReplyMessage(
+    "お住まいのエリアを選んでください。\n（地域は統計の分類だけに使い、文面とは結び付けません）",
+    [...wardGroups().map((g) => ({ label: g.label, data: `area:${g.id}` })), { label: "設定しない", data: "area:cancel" }],
+  );
+}
+
+/** 地域設定のpostbackを処理する。対象外のdataなら false */
+async function handleWardPostback(
+  data: string,
+  userId: string | undefined,
+  accessToken: string,
+  replyToken: string,
+  deps: LineDeps,
+): Promise<boolean> {
+  if (data.startsWith("area:")) {
+    const id = data.slice(5);
+    if (id === "cancel") {
+      await replyText(accessToken, replyToken, "地域は未設定のままにしました。いつでも「地域設定」と送って設定できます。");
+      return true;
+    }
+    const group = wardGroups().find((g) => g.id === id);
+    if (!group) return true;
+    await replyMessages(accessToken, replyToken, [
+      quickReplyMessage("お住まいの区市町村を選んでください。", group.items.map((m) => ({ label: m.name, data: `ward:${m.code}` }))),
+    ]);
+    return true;
+  }
+  if (data.startsWith("ward:")) {
+    const code = data.slice(5);
+    const muni = MUNIS.find((m) => String(m.code) === code);
+    if (!muni) return true;
+    if (!userId) {
+      await replyText(accessToken, replyToken, "地域を設定できませんでした。もう一度お試しください。");
+      return true;
+    }
+    await deps.setWard(userId, code);
+    await replyText(
+      accessToken,
+      replyToken,
+      `地域を「${muni.name}」に設定しました。\n今後の判定は、この地域の統計（件数のみ）に記録されます。変更はいつでも「地域設定」と送ってください。`,
+    );
+    return true;
+  }
+  return false;
 }
 
 // ---- 画像メッセージの取得（LINEコンテンツAPI） ----
@@ -270,6 +358,12 @@ async function processEvent(event: LineEvent, accessToken: string, deps: LineDep
   const replyToken = event.replyToken;
   if (!replyToken) return;
 
+  // 地域設定フロー（postback）
+  if (event.type === "postback") {
+    await handleWardPostback(event.postback?.data ?? "", event.source?.userId, accessToken, replyToken, deps);
+    return;
+  }
+
   if (event.type !== "message" || !event.message) return;
 
   const isText = event.message.type === "text" && typeof event.message.text === "string";
@@ -279,6 +373,11 @@ async function processEvent(event: LineEvent, accessToken: string, deps: LineDep
     return;
   }
   const text = isText ? (event.message.text as string) : "";
+  // 「地域設定」は判定せずエリア選択を返す
+  if (isText && WARD_SET_TRIGGER.test(text.trim())) {
+    await replyMessages(accessToken, replyToken, [areaQuickReply()]);
+    return;
+  }
   if (isText && text.trim().length === 0) return;
   if (text.length > 8000) {
     await replyText(accessToken, replyToken, TOO_LONG_TEXT);
@@ -311,8 +410,13 @@ async function processEvent(event: LineEvent, accessToken: string, deps: LineDep
   }
 
   try {
+    const ward = userId ? await deps.getWard(userId) : null;
     const result = await deps.judge({ text, image });
-    await replyMessages(accessToken, replyToken, [buildJudgeFlex(result)]);
+    const messages: unknown[] = [buildJudgeFlex(result)];
+    if (!ward) messages.push({ type: "text", text: WARD_HINT }); // 地域未設定の場合のみ案内
+    await replyMessages(accessToken, replyToken, messages);
+    // 匿名統計の加算（判定成功時のみ。返信後に実行し、失敗しても返信に影響させない）
+    await deps.recordStat({ ward: ward ?? "unknown", technique: result.technique, risk: result.risk });
   } catch (e) {
     // 受信本文がエラーメッセージ経由で漏れないよう定型文のみ（ログも同様）
     const msg = e instanceof Error ? e.message : "";

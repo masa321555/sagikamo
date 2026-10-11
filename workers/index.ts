@@ -6,6 +6,7 @@
 import { AnthropicLlmClient } from "../src/lib/llm/anthropic.ts";
 import { createJudgeContext, judgeText, techniqueLabel, type JudgeContext } from "../src/lib/judge/judge.ts";
 import { handleLineWebhook } from "./line.ts";
+import { currentYmJst, queryMonth, queryMonthRaw, recordStat, toCsv, type D1Like } from "./stats.ts";
 import techniquesJson from "../data/config/techniques.json";
 import statsJson from "../data/cache/stats.json";
 import contactsJson from "../data/cache/contacts.json";
@@ -33,6 +34,10 @@ interface Env {
   LINE_CHANNEL_ACCESS_TOKEN?: string; // wrangler secret（LINE Messaging API）
   ASSETS: { fetch(request: Request): Promise<Response> };
   RL_DO?: DONamespace; // レート制限カウンタ
+  STATS_DB?: D1Like; // 匿名統計カウンタ（D1）
+  WARD_KV?: { get(key: string): Promise<string | null>; put(key: string, value: string): Promise<void> }; // LINE地域設定
+  WARD_SALT?: string; // wrangler secret（LINE userIdハッシュ用）
+  STATS_ADMIN_TOKEN?: string; // wrangler secret（/api/counts/export 認証用）
 }
 
 // ExecutionContext の最小型定義（@cloudflare/workers-types非依存）
@@ -72,6 +77,12 @@ async function checkRateLimit(env: Env, name: string, limit: number): Promise<bo
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 
+/** LINE userIdの保存キー（salt付きSHA-256。生のuserIdは保存しない: CLAUDE.mdルール2） */
+async function wardKey(env: Env, userId: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(userId + (env.WARD_SALT ?? "")));
+  return "ward:" + [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
 }
@@ -89,7 +100,7 @@ function getJudgeCtx(env: Env): JudgeContext {
   return judgeCtx;
 }
 
-async function handleJudge(request: Request, env: Env): Promise<Response> {
+async function handleJudge(request: Request, env: Env, ctx: ExecutionCtx): Promise<Response> {
   // レート制限（本文の検証より先に実施し、不正リクエストの連打も遮断する）
   const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
   const [ipOk, globalOk] = await Promise.all([
@@ -101,7 +112,7 @@ async function handleJudge(request: Request, env: Env): Promise<Response> {
   }
 
   const body = (await request.json().catch(() => null)) as
-    | { text?: unknown; image?: { mediaType?: unknown; dataBase64?: unknown } }
+    | { text?: unknown; image?: { mediaType?: unknown; dataBase64?: unknown }; ward?: unknown }
     | null;
   if (!body) return json(400, { error: "リクエスト形式が不正です" });
 
@@ -130,9 +141,49 @@ async function handleJudge(request: Request, env: Env): Promise<Response> {
     return json(400, { error: "文面または画像を入力してください" });
   }
 
-  const ctx = getJudgeCtx(env);
-  const result = await judgeText(ctx, { text, image });
-  return json(200, { ...result, techniqueLabel: techniqueLabel(ctx.techniques, result.technique) });
+  const jc = getJudgeCtx(env);
+  const result = await judgeText(jc, { text, image });
+  // 匿名統計の加算（分類値のみ。本文は渡せない設計）。判定成功時のみ・レスポンスをブロックしない
+  const ward = typeof body.ward === "string" || typeof body.ward === "number" ? String(body.ward) : "unknown";
+  ctx.waitUntil(recordStat(env.STATS_DB, { ward, technique: result.technique, risk: result.risk, channel: "web" }));
+  return json(200, { ...result, techniqueLabel: techniqueLabel(jc.techniques, result.technique) });
+}
+
+/** 匿名統計の集計エンドポイント（/api/counts, /api/counts.csv, /api/counts/export） */
+async function handleCounts(url: URL, request: Request, env: Env): Promise<Response> {
+  if (!env.STATS_DB) return json(503, { error: "統計データは準備中です（データ取得不可）" });
+  const monthParam = url.searchParams.get("month");
+  if (monthParam && !/^\d{4}-(0[1-9]|1[0-2])$/.test(monthParam)) {
+    return json(400, { error: "monthはYYYY-MM形式で指定してください" });
+  }
+  const ym = monthParam ?? currentYmJst();
+
+  if (url.pathname === "/api/counts/export") {
+    const auth = request.headers.get("authorization") ?? "";
+    if (!env.STATS_ADMIN_TOKEN || auth !== `Bearer ${env.STATS_ADMIN_TOKEN}`) {
+      return json(401, { error: "認証が必要です" });
+    }
+    const rows = await queryMonthRaw(env.STATS_DB, ym);
+    return json(200, { month: ym, generated_at: new Date().toISOString(), rows, total: rows.reduce((a, r) => a + (r.n ?? 0), 0) });
+  }
+
+  const { rows, total } = await queryMonth(env.STATS_DB, ym);
+  if (url.pathname === "/api/counts.csv") {
+    return new Response(toCsv(ym, rows), {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="sagikamo_counts_${ym}.csv"`,
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
+  }
+  if (url.pathname === "/api/counts") {
+    return new Response(
+      JSON.stringify({ month: ym, generated_at: new Date().toISOString(), rows, total }),
+      { headers: { ...JSON_HEADERS, "Cache-Control": "public, max-age=3600" } },
+    );
+  }
+  return json(404, { error: "not found" });
 }
 
 export default {
@@ -144,7 +195,8 @@ export default {
         if (url.pathname === "/api/contacts" && request.method === "GET") return json(200, contactsJson);
         if (url.pathname === "/api/towns" && request.method === "GET") return json(200, townsJson);
         if (url.pathname === "/api/techniques" && request.method === "GET") return json(200, techniquesJson);
-        if (url.pathname === "/api/judge" && request.method === "POST") return await handleJudge(request, env);
+        if (url.pathname === "/api/judge" && request.method === "POST") return await handleJudge(request, env, ctx);
+        if (url.pathname.startsWith("/api/counts") && request.method === "GET") return await handleCounts(url, request, env);
         if (url.pathname === "/api/line/webhook" && request.method === "POST") {
           return await handleLineWebhook(request, env, ctx, {
             judge: async (input) => {
@@ -153,6 +205,11 @@ export default {
               return { ...result, techniqueLabel: techniqueLabel(jc.techniques, result.technique) };
             },
             checkRateLimit: (name, limit) => checkRateLimit(env, name, limit),
+            getWard: async (userId) => (env.WARD_KV ? env.WARD_KV.get(await wardKey(env, userId)) : null),
+            setWard: async (userId, code) => {
+              if (env.WARD_KV) await env.WARD_KV.put(await wardKey(env, userId), code);
+            },
+            recordStat: (rec) => recordStat(env.STATS_DB, { ...rec, channel: "line" }),
           });
         }
         return json(404, { error: "not found" });

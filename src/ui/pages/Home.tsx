@@ -8,6 +8,7 @@ import { getSampleJudgement, getStats, isForcedDemo, postJudge, type JudgeImageP
 import { isDictationSupported, startDictation, type DictationHandle } from "../speech.ts";
 import { DemoBadge, Kamo, LoadingKamo } from "../components/common.tsx";
 import { Icon } from "../components/icons.tsx";
+import { getRegion } from "../region.ts";
 import type { JudgeResponse, StatsJson } from "../types.ts";
 
 /** 送信前に画像を縮小してJPEG化する（長辺1568px。通信量とAPIコストを抑える） */
@@ -25,6 +26,18 @@ async function fileToJudgeImage(file: File): Promise<{ payload: JudgeImagePayloa
     payload: { mediaType: "image/jpeg", dataBase64: dataUrl.split(",")[1] },
     previewUrl: dataUrl,
   };
+}
+
+/** 統計の地域分類に使う現在の地域（自宅）設定の表示。未設定ならマップでの設定を案内する */
+function WardIndicator({ stats }: { stats: StatsJson | null }) {
+  const code = getRegion("home");
+  const name = code !== null ? stats?.municipalities.find((m) => m.code === code)?.name : undefined;
+  return (
+    <p className="source-note" style={{ marginTop: 16, marginBottom: 0 }}>
+      地域: {name ?? "未設定"}{" "}
+      <a href="#/map" style={{ color: "var(--navy)", fontWeight: 700 }}>（{name ? "変更" : "マップで設定"}）</a>
+    </p>
+  );
 }
 
 export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJudgement: boolean) => void }) {
@@ -236,8 +249,10 @@ export function Home({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJud
           </button>
         </p>
       )}
-      <p className="source-note" style={{ marginTop: 16 }}>
-        貼り付けた文面・画像はその場で判定し、サーバーに保存しません。<br />文面内のURLへのアクセスも行いません。
+      <WardIndicator stats={stats?.data ?? null} />
+      <p className="source-note" style={{ marginTop: 8 }}>
+        貼り付けた文面・画像はその場で判定し、サーバーに保存しません。<br />文面内のURLへのアクセスも行いません。<br />
+        ※判定結果の分類だけを統計として記録します。文面は保存しません。
       </p>
     </div>
   );

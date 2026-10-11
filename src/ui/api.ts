@@ -8,6 +8,7 @@ import seedContacts from "../../data/seed/contacts.json";
 import seedTowns from "../../data/seed/towns.json";
 import seedJudgement from "../../data/seed/sample_judgement.json";
 import techniquesConfig from "../../data/config/techniques.json";
+import { getRegion } from "./region.ts";
 import type { ContactsJson, JudgeResponse, StatsJson, TechniquesJson, TownsJson } from "./types.ts";
 
 export interface WithDemo<T> {
@@ -68,10 +69,13 @@ export interface JudgeImagePayload {
 
 /** LLM判定（テキストおよび/またはスクリーンショット画像）。失敗時は例外（ダミーで代替しない）。 */
 export async function postJudge(text: string, image?: JudgeImagePayload): Promise<JudgeResponse> {
+  // 匿名統計の地域分類用に「自宅」設定の区市町村コードを同送する（未設定なら送らない。
+  // 文面との対応はサーバーに保存されない: CLAUDE.mdルール2）
+  const ward = getRegion("home");
   const res = await fetch("/api/judge", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, image }),
+    body: JSON.stringify({ text, image, ...(ward !== null ? { ward: String(ward) } : {}) }),
   });
   const body = (await res.json()) as JudgeResponse & { error?: string };
   if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
