@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-08-14T15:03:10.494Z",
+  "generatedAt": "2026-11-23T17:13:10.181Z",
   "sagiDefinition": "警視庁の刑法犯認知件数のうち「その他詐欺」列（特殊詐欺の手口別内訳は本データに存在しない）",
   "sources": {
     "d1Current": {
       "name": "区市町村の町丁別、罪種別及び手口別認知件数（月累計）令和8年分",
       "provider": "警視庁",
       "url": "https://www.keishicho.metro.tokyo.lg.jp/about_mpd/jokyo_tokei/jokyo/ninchikensu.files/R8.csv",
-      "fetchedAt": "2026-08-11T18:30:14.118Z",
-      "period": "令和8年6月累計",
-      "note": "APIカタログ未登録のため警視庁サイトから月次バッチで直接取得（Shift_JIS）。公表当時の暫定値。"
+      "fetchedAt": "2026-11-23T17:12:55.925Z",
+      "period": "令和8年10月累計",
+      "note": "APIカタログ未登録のため警視庁サイトから月次バッチで直接取得（文字コードは自動判別）。公表当時の暫定値。"
     },
     "d1PrevYear": {
       "name": "区市町村の町丁別、罪種別及び手口別認知件数（月累計）令和7年分",
       "provider": "警視庁",
       "url": "https://service.api.metro.tokyo.lg.jp/api/t000022d1700000021-0632e1972402bbe7acd54e1baa425f94-0/json",
-      "fetchedAt": "2026-08-11T18:30:27.197Z",
+      "fetchedAt": "2026-11-23T17:13:06.366Z",
       "period": "令和7年（年間）",
       "note": "東京都オープンデータAPI経由。令和7年の年間確定分（元CSV: R7.csv）。"
     },
@@ -22,15 +22,15 @@
       "name": "住民基本台帳による東京都の世帯と人口（町丁別・年齢別）令和8年1月 第３‐１表 区市町村、年齢３区分別人口（人口総数）",
       "provider": "東京都総務局",
       "url": "https://service.api.metro.tokyo.lg.jp/api/t000003d2000001115-fc3e15adb482542f766115471be19a90-0/json",
-      "fetchedAt": "2026-08-11T18:30:27.369Z",
+      "fetchedAt": "2026-11-23T17:13:06.492Z",
       "period": "令和8年1月1日現在",
       "note": "令和8年1月1日現在。65歳以上人口はリスク指数の分母。"
     }
   },
   "tokyoTotal": {
-    "sagiCurrent": 6611,
+    "sagiCurrent": 13245,
     "sagiPrevYear": 9542,
-    "currentPeriod": "令和8年6月累計",
+    "currentPeriod": "令和8年10月累計",
     "prevYearPeriod": "令和7年（年間）"
   },
   "municipalities": [
@@ -40,11 +40,11 @@
       "d1Name": "千代田区",
       "pop65": 11571,
       "popTotal": 69139,
-      "sagiCurrent": 218,
+      "sagiCurrent": 380,
       "sagiPrevYear": 441,
-      "riskIndex": 188.4,
+      "riskIndex": 328.4,
       "riskIndexPrevYear": 381.1,
-      "riskIndexAll": 31.5,
+      "riskIndexAll": 55,
       "riskIndexAllPrevYear": 63.8
     },
     {
@@ -53,11 +53,11 @@
       "d1Name": "中央区",
       "pop65": 27200,
       "popTotal": 191015,
-      "sagiCurrent": 216,
+      "sagiCurrent": 387,
       "sagiPrevYear": 277,
-      "riskIndex": 79.4,
+      "riskIndex": 142.3,
       "riskIndexPrevYear": 101.8,
-      "riskIndexAll": 11.3,
+      "riskIndexAll": 20.3,
       "riskIndexAllPrevYear": 14.5
     },
     {
@@ -66,11 +66,11 @@
       "d1Name": "港区",
       "pop65": 46928,
       "popTotal": 269877,
-      "sagiCurrent": 306,
+      "sagiCurrent": 522,
       "sagiPrevYear": 470,
-      "riskIndex": 65.2,
+      "riskIndex": 111.2,
       "riskIndexPrevYear": 100.2,
-      "riskIndexAll": 11.3,
+      "riskIndexAll": 19.3,
       "riskIndexAllPrevYear": 17.4
     },
     {
@@ -79,11 +79,11 @@
       "d1Name": "新宿区",
       "pop65": 66611,
       "popTotal": 355125,
-      "sagiCurrent": 432,
+      "sagiCurrent": 761,
       "sagiPrevYear": 615,
-      "riskIndex": 64.9,
+      "riskIndex": 114.2,
       "riskIndexPrevYear": 92.3,
-      "riskIndexAll": 12.2,
+      "riskIndexAll": 21.4,
       "riskIndexAllPrevYear": 17.3
     },
     {
@@ -92,11 +92,11 @@
       "d1Name": "文京区",
       "pop65": 43954,
       "popTotal": 236981,
-      "sagiCurrent": 202,
+      "sagiCurrent": 329,
       "sagiPrevYear": 267,
-      "riskIndex": 46,
+      "riskIndex": 74.9,
       "riskIndexPrevYear": 60.7,
-      "riskIndexAll": 8.5,
+      "riskIndexAll": 13.9,
       "riskIndexAllPrevYear": 11.3
     },
     {
@@ -105,11 +105,11 @@
       "d1Name": "台東区",
       "pop65": 44256,
       "popTotal": 217512,
-      "sagiCurrent": 133,
+      "sagiCurrent": 273,
       "sagiPrevYear": 185,
-      "riskIndex": 30.1,
+      "riskIndex": 61.7,
       "riskIndexPrevYear": 41.8,
-      "riskIndexAll": 6.1,
+      "riskIndexAll": 12.6,
       "riskIndexAllPrevYear": 8.5
     },
     {
@@ -118,11 +118,11 @@
       "d1Name": "墨田区",
       "pop65": 59018,
       "popTotal": 288833,
-      "sagiCurrent": 98,
+      "sagiCurrent": 232,
       "sagiPrevYear": 176,
-      "riskIndex": 16.6,
+      "riskIndex": 39.3,
       "riskIndexPrevYear": 29.8,
-      "riskIndexAll": 3.4,
+      "riskIndexAll": 8,
       "riskIndexAllPrevYear": 6.1
     },
     {
@@ -131,11 +131,11 @@
       "d1Name": "江東区",
       "pop65": 112594,
       "popTotal": 543193,
-      "sagiCurrent": 227,
+      "sagiCurrent": 420,
       "sagiPrevYear": 307,
-      "riskIndex": 20.2,
+      "riskIndex": 37.3,
       "riskIndexPrevYear": 27.3,
-      "riskIndexAll": 4.2,
+      "riskIndexAll": 7.7,
       "riskIndexAllPrevYear": 5.7
     },
     {
@@ -144,11 +144,11 @@
       "d1Name": "品川区",
       "pop65": 80533,
       "popTotal": 415644,
-      "sagiCurrent": 159,
+      "sagiCurrent": 325,
       "sagiPrevYear": 246,
-      "riskIndex": 19.7,
+      "riskIndex": 40.4,
       "riskIndexPrevYear": 30.5,
-      "riskIndexAll": 3.8,
+      "riskIndexAll": 7.8,
       "riskIndexAllPrevYear": 5.9
     },
     {
@@ -157,11 +157,11 @@
       "d1Name": "目黒区",
       "pop65": 55556,
       "popTotal": 282607,
-      "sagiCurrent": 142,
+      "sagiCurrent": 276,
       "sagiPrevYear": 150,
-      "riskIndex": 25.6,
+      "riskIndex": 49.7,
       "riskIndexPrevYear": 27,
-      "riskIndexAll": 5,
+      "riskIndexAll": 9.8,
       "riskIndexAllPrevYear": 5.3
     },
     {
@@ -170,11 +170,11 @@
       "d1Name": "大田区",
       "pop65": 164218,
       "popTotal": 745048,
-      "sagiCurrent": 256,
+      "sagiCurrent": 498,
       "sagiPrevYear": 362,
-      "riskIndex": 15.6,
+      "riskIndex": 30.3,
       "riskIndexPrevYear": 22,
-      "riskIndexAll": 3.4,
+      "riskIndexAll": 6.7,
       "riskIndexAllPrevYear": 4.9
     },
     {
@@ -183,11 +183,11 @@
       "d1Name": "世田谷区",
       "pop65": 192309,
       "popTotal": 928666,
-      "sagiCurrent": 302,
+      "sagiCurrent": 673,
       "sagiPrevYear": 438,
-      "riskIndex": 15.7,
+      "riskIndex": 35,
       "riskIndexPrevYear": 22.8,
-      "riskIndexAll": 3.3,
+      "riskIndexAll": 7.2,
       "riskIndexAllPrevYear": 4.7
     },
     {
@@ -196,11 +196,11 @@
       "d1Name": "渋谷区",
       "pop65": 43321,
       "popTotal": 230880,
-      "sagiCurrent": 252,
+      "sagiCurrent": 495,
       "sagiPrevYear": 388,
-      "riskIndex": 58.2,
+      "riskIndex": 114.3,
       "riskIndexPrevYear": 89.6,
-      "riskIndexAll": 10.9,
+      "riskIndexAll": 21.4,
       "riskIndexAllPrevYear": 16.8
     },
     {
@@ -209,11 +209,11 @@
       "d1Name": "中野区",
       "pop65": 66736,
       "popTotal": 343794,
-      "sagiCurrent": 135,
+      "sagiCurrent": 327,
       "sagiPrevYear": 190,
-      "riskIndex": 20.2,
+      "riskIndex": 49,
       "riskIndexPrevYear": 28.5,
-      "riskIndexAll": 3.9,
+      "riskIndexAll": 9.5,
       "riskIndexAllPrevYear": 5.5
     },
     {
@@ -222,11 +222,11 @@
       "d1Name": "杉並区",
       "pop65": 121725,
       "popTotal": 582636,
-      "sagiCurrent": 164,
+      "sagiCurrent": 446,
       "sagiPrevYear": 261,
-      "riskIndex": 13.5,
+      "riskIndex": 36.6,
       "riskIndexPrevYear": 21.4,
-      "riskIndexAll": 2.8,
+      "riskIndexAll": 7.7,
       "riskIndexAllPrevYear": 4.5
     },
     {
@@ -235,11 +235,11 @@
       "d1Name": "豊島区",
       "pop65": 55981,
       "popTotal": 296129,
-      "sagiCurrent": 257,
+      "sagiCurrent": 510,
       "sagiPrevYear": 377,
-      "riskIndex": 45.9,
+      "riskIndex": 91.1,
       "riskIndexPrevYear": 67.3,
-      "riskIndexAll": 8.7,
+      "riskIndexAll": 17.2,
       "riskIndexAllPrevYear": 12.7
     },
     {
@@ -248,11 +248,11 @@
       "d1Name": "北区",
       "pop65": 83542,
       "popTotal": 367432,
-      "sagiCurrent": 183,
+      "sagiCurrent": 380,
       "sagiPrevYear": 302,
-      "riskIndex": 21.9,
+      "riskIndex": 45.5,
       "riskIndexPrevYear": 36.1,
-      "riskIndexAll": 5,
+      "riskIndexAll": 10.3,
       "riskIndexAllPrevYear": 8.2
     },
     {
@@ -261,11 +261,11 @@
       "d1Name": "荒川区",
       "pop65": 48548,
       "popTotal": 224784,
-      "sagiCurrent": 90,
+      "sagiCurrent": 170,
       "sagiPrevYear": 150,
-      "riskIndex": 18.5,
+      "riskIndex": 35,
       "riskIndexPrevYear": 30.9,
-      "riskIndexAll": 4,
+      "riskIndexAll": 7.6,
       "riskIndexAllPrevYear": 6.7
     },
     {
@@ -274,11 +274,11 @@
       "d1Name": "板橋区",
       "pop65": 131509,
       "popTotal": 583528,
-      "sagiCurrent": 239,
+      "sagiCurrent": 522,
       "sagiPrevYear": 302,
-      "riskIndex": 18.2,
+      "riskIndex": 39.7,
       "riskIndexPrevYear": 23,
-      "riskIndexAll": 4.1,
+      "riskIndexAll": 8.9,
       "riskIndexAllPrevYear": 5.2
     },
     {
@@ -287,11 +287,11 @@
       "d1Name": "練馬区",
       "pop65": 164978,
       "popTotal": 750559,
-      "sagiCurrent": 285,
+      "sagiCurrent": 592,
       "sagiPrevYear": 363,
-      "riskIndex": 17.3,
+      "riskIndex": 35.9,
       "riskIndexPrevYear": 22,
-      "riskIndexAll": 3.8,
+      "riskIndexAll": 7.9,
       "riskIndexAllPrevYear": 4.8
     },
     {
@@ -300,11 +300,11 @@
       "d1Name": "足立区",
       "pop65": 168265,
       "popTotal": 703369,
-      "sagiCurrent": 222,
+      "sagiCurrent": 486,
       "sagiPrevYear": 328,
-      "riskIndex": 13.2,
+      "riskIndex": 28.9,
       "riskIndexPrevYear": 19.5,
-      "riskIndexAll": 3.2,
+      "riskIndexAll": 6.9,
       "riskIndexAllPrevYear": 4.7
     },
     {
@@ -313,11 +313,11 @@
       "d1Name": "葛飾区",
       "pop65": 113332,
       "popTotal": 472558,
-      "sagiCurrent": 189,
+      "sagiCurrent": 390,
       "sagiPrevYear": 259,
-      "riskIndex": 16.7,
+      "riskIndex": 34.4,
       "riskIndexPrevYear": 22.9,
-      "riskIndexAll": 4,
+      "riskIndexAll": 8.3,
       "riskIndexAllPrevYear": 5.5
     },
     {
@@ -326,11 +326,11 @@
       "d1Name": "江戸川区",
       "pop65": 147044,
       "popTotal": 697414,
-      "sagiCurrent": 148,
+      "sagiCurrent": 296,
       "sagiPrevYear": 283,
-      "riskIndex": 10.1,
+      "riskIndex": 20.1,
       "riskIndexPrevYear": 19.2,
-      "riskIndexAll": 2.1,
+      "riskIndexAll": 4.2,
       "riskIndexAllPrevYear": 4.1
     },
     {
@@ -339,11 +339,11 @@
       "d1Name": "八王子市",
       "pop65": 157041,
       "popTotal": 558755,
-      "sagiCurrent": 149,
+      "sagiCurrent": 323,
       "sagiPrevYear": 220,
-      "riskIndex": 9.5,
+      "riskIndex": 20.6,
       "riskIndexPrevYear": 14,
-      "riskIndexAll": 2.7,
+      "riskIndexAll": 5.8,
       "riskIndexAllPrevYear": 3.9
     },
     {
@@ -352,11 +352,11 @@
       "d1Name": "立川市",
       "pop65": 46487,
       "popTotal": 187440,
-      "sagiCurrent": 101,
+      "sagiCurrent": 167,
       "sagiPrevYear": 151,
-      "riskIndex": 21.7,
+      "riskIndex": 35.9,
       "riskIndexPrevYear": 32.5,
-      "riskIndexAll": 5.4,
+      "riskIndexAll": 8.9,
       "riskIndexAllPrevYear": 8.1
     },
     {
@@ -365,11 +365,11 @@
       "d1Name": "武蔵野市",
       "pop65": 34011,
       "popTotal": 147958,
-      "sagiCurrent": 77,
+      "sagiCurrent": 150,
       "sagiPrevYear": 145,
-      "riskIndex": 22.6,
+      "riskIndex": 44.1,
       "riskIndexPrevYear": 42.6,
-      "riskIndexAll": 5.2,
+      "riskIndexAll": 10.1,
       "riskIndexAllPrevYear": 9.8
     },
     {
@@ -378,11 +378,11 @@
       "d1Name": "三鷹市",
       "pop65": 42673,
       "popTotal": 191083,
-      "sagiCurrent": 87,
+      "sagiCurrent": 183,
       "sagiPrevYear": 116,
-      "riskIndex": 20.4,
+      "riskIndex": 42.9,
       "riskIndexPrevYear": 27.2,
-      "riskIndexAll": 4.6,
+      "riskIndexAll": 9.6,
       "riskIndexAllPrevYear": 6.1
     },
     {
@@ -391,11 +391,11 @@
       "d1Name": "青梅市",
       "pop65": 42028,
       "popTotal": 128569,
-      "sagiCurrent": 23,
+      "sagiCurrent": 52,
       "sagiPrevYear": 46,
-      "riskIndex": 5.5,
+      "riskIndex": 12.4,
       "riskIndexPrevYear": 10.9,
-      "riskIndexAll": 1.8,
+      "riskIndexAll": 4,
       "riskIndexAllPrevYear": 3.6
     },
     {
@@ -404,11 +404,11 @@
       "d1Name": "府中市",
       "pop65": 59620,
       "popTotal": 262162,
-      "sagiCurrent": 85,
+      "sagiCurrent": 175,
       "sagiPrevYear": 98,
-      "riskIndex": 14.3,
+      "riskIndex": 29.4,
       "riskIndexPrevYear": 16.4,
-      "riskIndexAll": 3.2,
+      "riskIndexAll": 6.7,
       "riskIndexAllPrevYear": 3.7
     },
     {
@@ -417,11 +417,11 @@
       "d1Name": "昭島市",
       "pop65": 30561,
       "popTotal": 116049,
-      "sagiCurrent": 30,
+      "sagiCurrent": 89,
       "sagiPrevYear": 29,
-      "riskIndex": 9.8,
+      "riskIndex": 29.1,
       "riskIndexPrevYear": 9.5,
-      "riskIndexAll": 2.6,
+      "riskIndexAll": 7.7,
       "riskIndexAllPrevYear": 2.5
     },
     {
@@ -430,11 +430,11 @@
       "d1Name": "調布市",
       "pop65": 52920,
       "popTotal": 241074,
-      "sagiCurrent": 101,
+      "sagiCurrent": 215,
       "sagiPrevYear": 107,
-      "riskIndex": 19.1,
+      "riskIndex": 40.6,
       "riskIndexPrevYear": 20.2,
-      "riskIndexAll": 4.2,
+      "riskIndexAll": 8.9,
       "riskIndexAllPrevYear": 4.4
     },
     {
@@ -443,11 +443,11 @@
       "d1Name": "町田市",
       "pop65": 117936,
       "popTotal": 430428,
-      "sagiCurrent": 135,
+      "sagiCurrent": 276,
       "sagiPrevYear": 263,
-      "riskIndex": 11.4,
+      "riskIndex": 23.4,
       "riskIndexPrevYear": 22.3,
-      "riskIndexAll": 3.1,
+      "riskIndexAll": 6.4,
       "riskIndexAllPrevYear": 6.1
     },
     {
@@ -456,11 +456,11 @@
       "d1Name": "小金井市",
       "pop65": 27549,
       "popTotal": 125970,
-      "sagiCurrent": 54,
+      "sagiCurrent": 123,
       "sagiPrevYear": 27,
-      "riskIndex": 19.6,
+      "riskIndex": 44.6,
       "riskIndexPrevYear": 9.8,
-      "riskIndexAll": 4.3,
+      "riskIndexAll": 9.8,
       "riskIndexAllPrevYear": 2.1
     },
     {
@@ -469,11 +469,11 @@
       "d1Name": "小平市",
       "pop65": 47498,
       "popTotal": 197404,
-      "sagiCurrent": 62,
+      "sagiCurrent": 158,
       "sagiPrevYear": 104,
-      "riskIndex": 13.1,
+      "riskIndex": 33.3,
       "riskIndexPrevYear": 21.9,
-      "riskIndexAll": 3.1,
+      "riskIndexAll": 8,
       "riskIndexAllPrevYear": 5.3
     },
     {
@@ -482,11 +482,11 @@
       "d1Name": "日野市",
       "pop65": 46750,
       "popTotal": 189194,
-      "sagiCurrent": 101,
+      "sagiCurrent": 190,
       "sagiPrevYear": 166,
-      "riskIndex": 21.6,
+      "riskIndex": 40.6,
       "riskIndexPrevYear": 35.5,
-      "riskIndexAll": 5.3,
+      "riskIndexAll": 10,
       "riskIndexAllPrevYear": 8.8
     },
     {
@@ -495,11 +495,11 @@
       "d1Name": "東村山市",
       "pop65": 41402,
       "popTotal": 152136,
-      "sagiCurrent": 55,
+      "sagiCurrent": 101,
       "sagiPrevYear": 100,
-      "riskIndex": 13.3,
+      "riskIndex": 24.4,
       "riskIndexPrevYear": 24.2,
-      "riskIndexAll": 3.6,
+      "riskIndexAll": 6.6,
       "riskIndexAllPrevYear": 6.6
     },
     {
@@ -508,11 +508,11 @@
       "d1Name": "国分寺市",
       "pop65": 29055,
       "popTotal": 130076,
-      "sagiCurrent": 41,
+      "sagiCurrent": 113,
       "sagiPrevYear": 27,
-      "riskIndex": 14.1,
+      "riskIndex": 38.9,
       "riskIndexPrevYear": 9.3,
-      "riskIndexAll": 3.2,
+      "riskIndexAll": 8.7,
       "riskIndexAllPrevYear": 2.1
     },
     {
@@ -521,11 +521,11 @@
       "d1Name": "国立市",
       "pop65": 19011,
       "popTotal": 76460,
-      "sagiCurrent": 37,
+      "sagiCurrent": 67,
       "sagiPrevYear": 54,
-      "riskIndex": 19.5,
+      "riskIndex": 35.2,
       "riskIndexPrevYear": 28.4,
-      "riskIndexAll": 4.8,
+      "riskIndexAll": 8.8,
       "riskIndexAllPrevYear": 7.1
     },
     {
@@ -534,11 +534,11 @@
       "d1Name": "福生市",
       "pop65": 15669,
       "popTotal": 56896,
-      "sagiCurrent": 31,
+      "sagiCurrent": 68,
       "sagiPrevYear": 28,
-      "riskIndex": 19.8,
+      "riskIndex": 43.4,
       "riskIndexPrevYear": 17.9,
-      "riskIndexAll": 5.4,
+      "riskIndexAll": 12,
       "riskIndexAllPrevYear": 4.9
     },
     {
@@ -547,11 +547,11 @@
       "d1Name": "狛江市",
       "pop65": 19947,
       "popTotal": 82258,
-      "sagiCurrent": 28,
+      "sagiCurrent": 63,
       "sagiPrevYear": 44,
-      "riskIndex": 14,
+      "riskIndex": 31.6,
       "riskIndexPrevYear": 22.1,
-      "riskIndexAll": 3.4,
+      "riskIndexAll": 7.7,
       "riskIndexAllPrevYear": 5.3
     },
     {
@@ -560,11 +560,11 @@
       "d1Name": "東大和市",
       "pop65": 23662,
       "popTotal": 84989,
-      "sagiCurrent": 21,
+      "sagiCurrent": 46,
       "sagiPrevYear": 45,
-      "riskIndex": 8.9,
+      "riskIndex": 19.4,
       "riskIndexPrevYear": 19,
-      "riskIndexAll": 2.5,
+      "riskIndexAll": 5.4,
       "riskIndexAllPrevYear": 5.3
     },
     {
@@ -573,11 +573,11 @@
       "d1Name": "清瀬市",
       "pop65": 20924,
       "popTotal": 75682,
-      "sagiCurrent": 43,
+      "sagiCurrent": 67,
       "sagiPrevYear": 49,
-      "riskIndex": 20.6,
+      "riskIndex": 32,
       "riskIndexPrevYear": 23.4,
-      "riskIndexAll": 5.7,
+      "riskIndexAll": 8.9,
       "riskIndexAllPrevYear": 6.5
     },
     {
@@ -586,11 +586,11 @@
       "d1Name": "東久留米市",
       "pop65": 33771,
       "popTotal": 116570,
-      "sagiCurrent": 38,
+      "sagiCurrent": 75,
       "sagiPrevYear": 53,
-      "riskIndex": 11.3,
+      "riskIndex": 22.2,
       "riskIndexPrevYear": 15.7,
-      "riskIndexAll": 3.3,
+      "riskIndexAll": 6.4,
       "riskIndexAllPrevYear": 4.5
     },
     {
@@ -599,11 +599,11 @@
       "d1Name": "武蔵村山市",
       "pop65": 19110,
       "popTotal": 70564,
-      "sagiCurrent": 17,
+      "sagiCurrent": 41,
       "sagiPrevYear": 33,
-      "riskIndex": 8.9,
+      "riskIndex": 21.5,
       "riskIndexPrevYear": 17.3,
-      "riskIndexAll": 2.4,
+      "riskIndexAll": 5.8,
       "riskIndexAllPrevYear": 4.7
     },
     {
@@ -612,11 +612,11 @@
       "d1Name": "多摩市",
       "pop65": 43604,
       "popTotal": 148248,
-      "sagiCurrent": 121,
+      "sagiCurrent": 208,
       "sagiPrevYear": 118,
-      "riskIndex": 27.7,
+      "riskIndex": 47.7,
       "riskIndexPrevYear": 27.1,
-      "riskIndexAll": 8.2,
+      "riskIndexAll": 14,
       "riskIndexAllPrevYear": 8
     },
     {
@@ -625,11 +625,11 @@
       "d1Name": "稲城市",
       "pop65": 21066,
       "popTotal": 94461,
-      "sagiCurrent": 38,
+      "sagiCurrent": 76,
       "sagiPrevYear": 59,
-      "riskIndex": 18,
+      "riskIndex": 36.1,
       "riskIndexPrevYear": 28,
-      "riskIndexAll": 4,
+      "riskIndexAll": 8,
       "riskIndexAllPrevYear": 6.2
     },
     {
@@ -638,11 +638,11 @@
       "d1Name": "羽村市",
       "pop65": 14648,
       "popTotal": 53955,
-      "sagiCurrent": 30,
+      "sagiCurrent": 51,
       "sagiPrevYear": 36,
-      "riskIndex": 20.5,
+      "riskIndex": 34.8,
       "riskIndexPrevYear": 24.6,
-      "riskIndexAll": 5.6,
+      "riskIndexAll": 9.5,
       "riskIndexAllPrevYear": 6.7
     },
     {
@@ -651,11 +651,11 @@
       "d1Name": "あきる野市",
       "pop65": 24222,
       "popTotal": 78559,
-      "sagiCurrent": 54,
+      "sagiCurrent": 92,
       "sagiPrevYear": 44,
-      "riskIndex": 22.3,
+      "riskIndex": 38,
       "riskIndexPrevYear": 18.2,
-      "riskIndexAll": 6.9,
+      "riskIndexAll": 11.7,
       "riskIndexAllPrevYear": 5.6
     },
     {
@@ -664,11 +664,11 @@
       "d1Name": "西東京市",
       "pop65": 51140,
       "popTotal": 207227,
-      "sagiCurrent": 65,
+      "sagiCurrent": 138,
       "sagiPrevYear": 88,
-      "riskIndex": 12.7,
+      "riskIndex": 27,
       "riskIndexPrevYear": 17.2,
-      "riskIndexAll": 3.1,
+      "riskIndexAll": 6.7,
       "riskIndexAllPrevYear": 4.2
     },
     {
@@ -677,11 +677,11 @@
       "d1Name": "西多摩郡瑞穂町",
       "pop65": 9659,
       "popTotal": 31968,
-      "sagiCurrent": 15,
+      "sagiCurrent": 21,
       "sagiPrevYear": 19,
-      "riskIndex": 15.5,
+      "riskIndex": 21.7,
       "riskIndexPrevYear": 19.7,
-      "riskIndexAll": 4.7,
+      "riskIndexAll": 6.6,
       "riskIndexAllPrevYear": 5.9
     },
     {
@@ -690,11 +690,11 @@
       "d1Name": "西多摩郡日の出町",
       "pop65": 5799,
       "popTotal": 15796,
-      "sagiCurrent": 5,
+      "sagiCurrent": 18,
       "sagiPrevYear": 4,
-      "riskIndex": 8.6,
+      "riskIndex": 31,
       "riskIndexPrevYear": 6.9,
-      "riskIndexAll": 3.2,
+      "riskIndexAll": 11.4,
       "riskIndexAllPrevYear": 2.5
     },
     {
@@ -703,11 +703,11 @@
       "d1Name": "西多摩郡檜原村",
       "pop65": 1026,
       "popTotal": 1902,
-      "sagiCurrent": 4,
+      "sagiCurrent": 5,
       "sagiPrevYear": 1,
-      "riskIndex": 39,
+      "riskIndex": 48.7,
       "riskIndexPrevYear": 9.7,
-      "riskIndexAll": 21,
+      "riskIndexAll": 26.3,
       "riskIndexAllPrevYear": 5.3
     },
     {
@@ -727,13 +727,13 @@
       "code": 13361,
       "name": "大島町",
       "d1Name": "大島町",
-      "pop65": 2543,
+      "pop65": 2545,
       "popTotal": 6589,
-      "sagiCurrent": 0,
+      "sagiCurrent": 1,
       "sagiPrevYear": 2,
-      "riskIndex": 0,
+      "riskIndex": 3.9,
       "riskIndexPrevYear": 7.9,
-      "riskIndexAll": 0,
+      "riskIndexAll": 1.5,
       "riskIndexAllPrevYear": 3
     },
     {
@@ -781,11 +781,11 @@
       "d1Name": "三宅島三宅村",
       "pop65": 847,
       "popTotal": 2133,
-      "sagiCurrent": 2,
+      "sagiCurrent": 5,
       "sagiPrevYear": 0,
-      "riskIndex": 23.6,
+      "riskIndex": 59,
       "riskIndexPrevYear": 0,
-      "riskIndexAll": 9.4,
+      "riskIndexAll": 23.4,
       "riskIndexAllPrevYear": 0
     },
     {
@@ -807,11 +807,11 @@
       "d1Name": "八丈島八丈町",
       "pop65": 2651,
       "popTotal": 6652,
-      "sagiCurrent": 1,
+      "sagiCurrent": 3,
       "sagiPrevYear": 0,
-      "riskIndex": 3.8,
+      "riskIndex": 11.3,
       "riskIndexPrevYear": 0,
-      "riskIndexAll": 1.5,
+      "riskIndexAll": 4.5,
       "riskIndexAllPrevYear": 0
     },
     {
@@ -833,11 +833,11 @@
       "d1Name": "小笠原村",
       "pop65": 421,
       "popTotal": 2461,
-      "sagiCurrent": 1,
+      "sagiCurrent": 2,
       "sagiPrevYear": 4,
-      "riskIndex": 23.8,
+      "riskIndex": 47.5,
       "riskIndexPrevYear": 95,
-      "riskIndexAll": 4.1,
+      "riskIndexAll": 8.1,
       "riskIndexAllPrevYear": 16.3
     }
   ]

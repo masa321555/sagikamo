@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-14T15:03:10.501Z",
+  "generatedAt": "2026-11-23T17:13:10.187Z",
   "source": {
     "name": "高齢者等の異変に気付いた際の区市町村連絡先一覧",
     "provider": "東京都福祉局",
     "url": "https://service.api.metro.tokyo.lg.jp/api/t000054d0000000084-95089ae4131e4cfcfd43b9eeef5fb705-0/json",
-    "fetchedAt": "2026-08-11T18:30:27.545Z",
+    "fetchedAt": "2026-11-23T17:13:06.722Z",
     "note": "version 1.0.3（698行）。先頭にヘッダ的な空行が1行あり取り込み時に除外。"
   },
   "contacts": [

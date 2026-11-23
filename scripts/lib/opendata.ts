@@ -19,7 +19,7 @@ export const SOURCES = {
     url: "https://www.keishicho.metro.tokyo.lg.jp/about_mpd/jokyo_tokei/jokyo/ninchikensu.files/R8.csv",
     pageUrl: "https://www.keishicho.metro.tokyo.lg.jp/about_mpd/jokyo_tokei/jokyo/ninchikensu.html",
     file: "d1_current.csv",
-    note: "APIカタログ未登録のため警視庁サイトから月次バッチで直接取得（Shift_JIS）。公表当時の暫定値。",
+    note: "APIカタログ未登録のため警視庁サイトから月次バッチで直接取得（文字コードは自動判別）。公表当時の暫定値。",
   },
   d1PrevApi: {
     key: "d1_prev",
@@ -99,9 +99,22 @@ export interface D1Row {
   total: number;
 }
 
-/** Shift_JISのCSVバイト列をD1行配列にする（ヘッダ検証込み） */
+/**
+ * CSVバイト列の文字コードを判別して文字列にする。
+ * 警視庁のCSVは Shift_JIS だったが、2026年後半の更新で UTF-8（BOM付き）に変わったため両対応とする。
+ * UTF-8として厳密に解釈できればUTF-8、できなければShift_JISとして読む。
+ */
+export function decodeCsv(buf: Buffer): { text: string; encoding: "utf-8" | "shift_jis" } {
+  try {
+    return { text: new TextDecoder("utf-8", { fatal: true }).decode(buf), encoding: "utf-8" };
+  } catch {
+    return { text: new TextDecoder("shift_jis").decode(buf), encoding: "shift_jis" };
+  }
+}
+
+/** CSVバイト列（UTF-8またはShift_JIS）をD1行配列にする（ヘッダ検証込み） */
 export function parseD1Csv(buf: Buffer): { header: string[]; rows: D1Row[] } {
-  const text = new TextDecoder("shift_jis").decode(buf);
+  const { text } = decodeCsv(buf);
   const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
   const header = splitCsvLine(lines[0]);
   const areaIdx = header.indexOf(D1_AREA_COLUMN);

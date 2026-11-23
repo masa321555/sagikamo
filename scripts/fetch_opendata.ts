@@ -50,7 +50,7 @@ async function fetchD1CurrentCsv(): Promise<void> {
   }
 
   fs.mkdirSync(RAW_DIR, { recursive: true });
-  fs.writeFileSync(path.join(RAW_DIR, src.file), buf); // 原文（Shift_JIS）のまま保存
+  fs.writeFileSync(path.join(RAW_DIR, src.file), buf); // 原文のバイト列のまま保存（文字コードは読み込み時に判別）
   records.push({
     key: src.key, name: src.name, provider: src.provider, url: src.url,
     fetchedAt: new Date().toISOString(), httpStatus: res.status, bytes: buf.length,
