@@ -6,7 +6,10 @@
 import { AnthropicLlmClient } from "../src/lib/llm/anthropic.ts";
 import { createJudgeContext, judgeText, techniqueLabel, type JudgeContext } from "../src/lib/judge/judge.ts";
 import { handleLineWebhook } from "./line.ts";
-import { currentYmJst, queryMonth, queryMonthRaw, recordStat, toCsv, type D1Like } from "./stats.ts";
+import {
+  currentYmJst, phoneToCsv, queryMonth, queryMonthRaw, queryPhoneMonth, queryPhoneMonthRaw,
+  recordPhoneStat, recordStat, toCsv, type D1Like,
+} from "./stats.ts";
 import techniquesJson from "../data/config/techniques.json";
 import statsJson from "../data/cache/stats.json";
 import contactsJson from "../data/cache/contacts.json";
@@ -112,7 +115,12 @@ async function handleJudge(request: Request, env: Env, ctx: ExecutionCtx): Promi
   }
 
   const body = (await request.json().catch(() => null)) as
-    | { text?: unknown; image?: { mediaType?: unknown; dataBase64?: unknown }; ward?: unknown }
+    | {
+        text?: unknown;
+        image?: { mediaType?: unknown; dataBase64?: unknown };
+        ward?: unknown;
+        phone?: { band?: unknown; org?: unknown }; // 電話チェック経由のときの分類ID（番号そのものは受け取らない）
+      }
     | null;
   if (!body) return json(400, { error: "リクエスト形式が不正です" });
 
@@ -146,7 +154,27 @@ async function handleJudge(request: Request, env: Env, ctx: ExecutionCtx): Promi
   // 匿名統計の加算（分類値のみ。本文は渡せない設計）。判定成功時のみ・レスポンスをブロックしない
   const ward = typeof body.ward === "string" || typeof body.ward === "number" ? String(body.ward) : "unknown";
   ctx.waitUntil(recordStat(env.STATS_DB, { ward, technique: result.technique, risk: result.risk, channel: "web" }));
+  // 電話チェック経由なら、番号帯と名乗られた組織の分類IDも件数として加算（語彙外は記録側で落とす）
+  if (body.phone && typeof body.phone === "object") {
+    ctx.waitUntil(
+      recordPhoneStat(env.STATS_DB, {
+        band: typeof body.phone.band === "string" ? body.phone.band : "none",
+        org: typeof body.phone.org === "string" ? body.phone.org : "none",
+        channel: "web",
+      }),
+    );
+  }
   return json(200, { ...result, techniqueLabel: techniqueLabel(jc.techniques, result.technique) });
+}
+
+/** 番号チェックだけで終えた場合の統計加算（番号帯の分類IDのみ受け取る。番号そのものは受け取らない） */
+async function handlePhoneStat(request: Request, env: Env, ctx: ExecutionCtx): Promise<Response> {
+  const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+  if (!(await checkRateLimit(env, `pstat:${ip}`, 10))) return json(429, { error: "rate limited" });
+  const body = (await request.json().catch(() => null)) as { band?: unknown } | null;
+  if (!body || typeof body.band !== "string") return json(400, { error: "リクエスト形式が不正です" });
+  ctx.waitUntil(recordPhoneStat(env.STATS_DB, { band: body.band, org: "none", channel: "web" }));
+  return json(200, { ok: true });
 }
 
 /** 匿名統計の集計エンドポイント（/api/counts, /api/counts.csv, /api/counts/export） */
@@ -157,6 +185,32 @@ async function handleCounts(url: URL, request: Request, env: Env): Promise<Respo
     return json(400, { error: "monthはYYYY-MM形式で指定してください" });
   }
   const ym = monthParam ?? currentYmJst();
+
+  // 電話チェックの統計（番号帯 × 名乗られた組織）
+  if (url.pathname === "/api/counts/phone/export") {
+    const auth = request.headers.get("authorization") ?? "";
+    if (!env.STATS_ADMIN_TOKEN || auth !== `Bearer ${env.STATS_ADMIN_TOKEN}`) {
+      return json(401, { error: "認証が必要です" });
+    }
+    const rows = await queryPhoneMonthRaw(env.STATS_DB, ym);
+    return json(200, { month: ym, generated_at: new Date().toISOString(), rows, total: rows.reduce((a, r) => a + (r.n ?? 0), 0) });
+  }
+  if (url.pathname === "/api/counts/phone" || url.pathname === "/api/counts/phone.csv") {
+    const { rows, total } = await queryPhoneMonth(env.STATS_DB, ym);
+    if (url.pathname.endsWith(".csv")) {
+      return new Response(phoneToCsv(ym, rows), {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="sagikamo_counts_phone_${ym}.csv"`,
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
+    return new Response(
+      JSON.stringify({ month: ym, generated_at: new Date().toISOString(), rows, total }),
+      { headers: { ...JSON_HEADERS, "Cache-Control": "public, max-age=3600" } },
+    );
+  }
 
   if (url.pathname === "/api/counts/export") {
     const auth = request.headers.get("authorization") ?? "";
@@ -196,6 +250,7 @@ export default {
         if (url.pathname === "/api/towns" && request.method === "GET") return json(200, townsJson);
         if (url.pathname === "/api/techniques" && request.method === "GET") return json(200, techniquesJson);
         if (url.pathname === "/api/judge" && request.method === "POST") return await handleJudge(request, env, ctx);
+        if (url.pathname === "/api/phone-stat" && request.method === "POST") return await handlePhoneStat(request, env, ctx);
         if (url.pathname.startsWith("/api/counts") && request.method === "GET") return await handleCounts(url, request, env);
         if (url.pathname === "/api/line/webhook" && request.method === "POST") {
           return await handleLineWebhook(request, env, ctx, {
@@ -210,6 +265,7 @@ export default {
               if (env.WARD_KV) await env.WARD_KV.put(await wardKey(env, userId), code);
             },
             recordStat: (rec) => recordStat(env.STATS_DB, { ...rec, channel: "line" }),
+            recordPhoneStat: (band) => recordPhoneStat(env.STATS_DB, { band, org: "none", channel: "line" }),
           });
         }
         return json(404, { error: "not found" });

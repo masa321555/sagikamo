@@ -68,18 +68,32 @@ export interface JudgeImagePayload {
 }
 
 /** LLM判定（テキストおよび/またはスクリーンショット画像）。失敗時は例外（ダミーで代替しない）。 */
-export async function postJudge(text: string, image?: JudgeImagePayload): Promise<JudgeResponse> {
+export async function postJudge(
+  text: string,
+  image?: JudgeImagePayload,
+  phone?: { band: string; org: string }, // 電話チェック経由のときの分類ID（番号そのものは送らない）
+): Promise<JudgeResponse> {
   // 匿名統計の地域分類用に「自宅」設定の区市町村コードを同送する（未設定なら送らない。
   // 文面との対応はサーバーに保存されない: CLAUDE.mdルール2）
   const ward = getRegion("home");
   const res = await fetch("/api/judge", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, image, ...(ward !== null ? { ward: String(ward) } : {}) }),
+    body: JSON.stringify({ text, image, ...(ward !== null ? { ward: String(ward) } : {}), ...(phone ? { phone } : {}) }),
   });
   const body = (await res.json()) as JudgeResponse & { error?: string };
   if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
   return body;
+}
+
+/** 番号チェックだけで終えたときの匿名統計（番号帯の分類IDのみ送る。失敗しても画面には影響させない） */
+export function postPhoneStat(band: string): void {
+  void fetch("/api/phone-stat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ band }),
+    keepalive: true,
+  }).catch(() => undefined);
 }
 
 /** デモ用サンプル判定（明示的に「サンプル判定を見る」を押したときだけ使う） */

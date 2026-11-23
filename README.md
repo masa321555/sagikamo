@@ -70,6 +70,10 @@ npm run deploy          # ビルド＆Cloudflareへデプロイ
   npx wrangler d1 migrations apply sagikamo-stats-staging --env staging --remote
   npx wrangler d1 migrations apply sagikamo-stats --remote   # 本番
   ```
+- 電話チェックの統計（番号帯 × 名乗られた組織。番号そのものは保存しない）:
+  `GET /api/counts/phone?month=YYYY-MM`／`GET /api/counts/phone.csv`／`GET /api/counts/phone/export`（要Bearer認証）。
+  テーブルは `counts_phone`（マイグレーション `0002_counts_phone.sql`）
+- 番号帯のルールは `data/config/phone_rules.json` に一元化（上から順に評価。ルールの追加・更新はこのファイルのみ）
 - 手動確認:
   ```sh
   npx wrangler d1 execute sagikamo-stats-staging --env staging --remote \

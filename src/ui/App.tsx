@@ -8,11 +8,12 @@ import { Zukan } from "./pages/Zukan.tsx";
 import { Consult } from "./pages/Consult.tsx";
 import { About } from "./pages/About.tsx";
 import { PhoneCheck } from "./pages/PhoneCheck.tsx";
+import { AfterCall } from "./pages/AfterCall.tsx";
 import { isForcedDemo } from "./api.ts";
 import { Icon } from "./components/icons.tsx";
 import type { JudgeResponse } from "./types.ts";
 
-type Route = "home" | "result" | "map" | "zukan" | "consult" | "about" | "phone";
+type Route = "home" | "result" | "map" | "zukan" | "consult" | "about" | "phone" | "after";
 
 function parseRoute(): Route {
   const h = location.hash.replace(/^#\/?/, "");
@@ -22,6 +23,7 @@ function parseRoute(): Route {
   if (h.startsWith("consult")) return "consult";
   if (h.startsWith("about")) return "about";
   if (h.startsWith("phone")) return "phone";
+  if (h.startsWith("after")) return "after";
   return "home";
 }
 
@@ -61,6 +63,7 @@ export function App() {
       case "zukan": return <Zukan />;
       case "consult": return <Consult />;
       case "about": return <About />;
+      case "after": return <AfterCall />;
       case "phone":
         return <PhoneCheck onJudged={(r, d) => { setJudgeResult({ result: r, isDemo: d }); navigate("result"); }} />;
       default:
@@ -91,7 +94,7 @@ export function App() {
         <a href="#/zukan" className={route === "zukan" ? "active" : ""}>
           <span className="nav-icon" aria-hidden="true"><Icon name="book" size={22} /></span>図鑑
         </a>
-        <a href="#/consult" className={route === "consult" ? "active" : ""}>
+        <a href="#/consult" className={route === "consult" || route === "after" ? "active" : ""}>
           <span className="nav-icon" aria-hidden="true"><Icon name="phone" size={22} /></span>相談
         </a>
       </nav>

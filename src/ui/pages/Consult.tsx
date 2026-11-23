@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getContacts } from "../api.ts";
-import { Kamo, SourceNote } from "../components/common.tsx";
+import { BlockGuide, Kamo, SourceNote } from "../components/common.tsx";
 import type { ContactsJson } from "../types.ts";
 
 export function Consult() {
@@ -33,6 +33,13 @@ export function Consult() {
         <p style={{ margin: "4px 0 0" }}>契約・支払い・買い物のトラブル（消費者ホットライン）</p>
       </div>
 
+      {/* 対処ナビへの導線（電話に出てしまった・情報を伝えてしまった後の行動を段階別に案内） */}
+      <div className="card" style={{ marginTop: 12 }}>
+        <p style={{ margin: 0, fontWeight: 800, color: "var(--navy)" }}>電話に出てしまった・情報を伝えてしまったとき</p>
+        <p style={{ margin: "4px 0 8px" }}>いまの状況をえらぶと、次にすることを順番にご案内します。</p>
+        <a className="button-secondary" href="#/after">対処ナビをひらく</a>
+      </div>
+
       {/* キャラクターは緊急導線（110）の周辺には置かず、区市町村窓口の導入部にのみ配置する */}
       <div className="card" style={{ marginTop: 12 }}>
         <p className="kamo-lead">迷ったら、かけて大丈夫。</p>
@@ -44,6 +51,8 @@ export function Consult() {
           <Kamo pose="phone" size={88} alt="受話器で相談の電話をかけるサギカモ" />
         </div>
       </div>
+
+      <BlockGuide />
 
       <h2 className="section-title">お住まいの区市町村の高齢者相談窓口</h2>
       <p className="source-note" style={{ marginTop: 0 }}>

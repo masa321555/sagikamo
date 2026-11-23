@@ -165,6 +165,12 @@ export function Result({ result, isDemoJudgement }: { result: JudgeResponse; isD
       <ActionList actions={result.actions} />
 
       {result.risk !== "low" && (
+        <p style={{ marginTop: 12 }}>
+          <a className="button-secondary" href="#/after">すでに応じてしまった方へ（対処ナビ）</a>
+        </p>
+      )}
+
+      {result.risk !== "low" && (
         <div className="card" style={{ marginTop: 16 }}>
           <h2 className="section-title icon-title" style={{ marginTop: 0 }}><Icon name="mail" size={20} />家族に知らせる（まもるカード）</h2>
           <p className="source-note" style={{ marginTop: 0 }}>

@@ -46,7 +46,7 @@ export function About() {
           <Kamo pose="inspect" size={80} alt="虫眼鏡で文面を調べるサギカモ" />
         </div>
         <ul className="evidence-list" style={{ marginBottom: 0 }}>
-          <li><strong>電話チェック</strong>: あやしい電話は、ボタンをえらぶだけ（文字入力は不要）</li>
+          <li><strong>電話チェック</strong>: かかってきた番号の確認（国際電話番号など）と、ボタンをえらぶだけの質問で判定</li>
           <li><strong>貼り付け</strong>: メール・SMS・LINEなどの文面をコピーして貼るだけ</li>
           <li><strong>カメラ・写真</strong>: 届いたハガキや、べつの携帯の画面を撮って判定。スクリーンショットもOK</li>
           <li><strong>声で伝える</strong>: 電話で言われた内容を、話すだけで入力</li>
@@ -79,6 +79,8 @@ export function About() {
         <p style={{ marginBottom: 0 }}>
           「110（緊急）」「#9110（警察相談）」「188（消費者ホットライン）」の使い分けと、
           お住まいの区市町村の相談窓口をご案内します。ひとりで抱え込まず、早めの相談が一番の対策です。
+          電話に出てしまった・情報を伝えてしまったときは「対処ナビ」で、次にすることを順番に確認できます。
+          着信のブロックは、警視庁のアプリ「デジポリス」などの設定方法をご案内します。
         </p>
       </div>
 

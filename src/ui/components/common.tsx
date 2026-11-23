@@ -128,6 +128,49 @@ export function ActionList({ actions }: { actions: ActionId[] }) {
   );
 }
 
+/**
+ * 着信ブロックの案内。サギカモ自体は着信履歴の読み取りやブロックを行わないため、
+ * 警視庁のアプリと固定電話向けの公的な窓口へ役割を分けて案内する。
+ */
+export function BlockGuide() {
+  return (
+    <div className="card" style={{ marginTop: 12 }}>
+      <h3 className="section-title" style={{ marginTop: 0 }}>これからの電話を防ぐには</h3>
+      <ul className="evidence-list">
+        <li>
+          <strong>スマートフォン</strong>: 警視庁の防犯アプリ「デジポリス」に、国際電話番号からの着信をブロックする機能（国際電話番号ブロックシステム）があります。アプリでの設定が必要で、iPhoneとAndroidで使える機能に違いがあります。
+        </li>
+        <li>
+          <strong>固定電話</strong>: 「国際電話不取扱受付センター」（
+          <a href="tel:0120210364" style={{ color: "var(--navy)", fontWeight: 700 }}>0120-210-364</a>
+          ）に申し込むと、海外と電話をする用がない方は国際電話の利用を休止できます。手続きが難しいときは、最寄りの警察署でも相談できます。
+        </li>
+      </ul>
+      <p style={{ margin: "8px 0 0", display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <a
+          className="button-secondary"
+          href="https://www.keishicho.metro.tokyo.lg.jp/kurashi/tokushu/furikome/digipolice.html"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          デジポリスの案内（警視庁）
+        </a>
+        <a
+          className="button-secondary"
+          href="https://www.npa.go.jp/bureau/safetylife/sos47/case/international-phone/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          国際電話の対策（警察庁）
+        </a>
+      </p>
+      <p className="source-note" style={{ marginBottom: 0 }}>
+        サギカモには、着信をブロックする機能や着信履歴を読み取る機能はありません。出典: 警視庁「防犯アプリ デジポリス」／警察庁「みんなでとめよう!!国際電話詐欺」
+      </p>
+    </div>
+  );
+}
+
 export function SourceNote({ source, isDemo }: { source: SourceInfo; isDemo: boolean }) {
   const date = source.fetchedAt ? source.fetchedAt.slice(0, 10) : "";
   return (

@@ -7,7 +7,11 @@
 
 import { ACTION_DISPLAY, LOW_RISK_NOTICE, RISK_DISPLAY } from "../src/lib/judge/templates.ts";
 import type { ActionId, RiskLevel } from "../src/lib/judge/schema.ts";
+import {
+  checkPhoneNumber, looksLikePhoneNumberOnly, PHONE_LEVEL_DISPLAY, PHONE_NUMBER_NOTICE, type PhoneRule,
+} from "../src/lib/phone/check.ts";
 import statsJson from "../data/cache/stats.json";
+import phoneRulesJson from "../data/config/phone_rules.json";
 
 const LINE_API = "https://api.line.me/v2/bot";
 const APP_URL = "https://sagikamo.sagikanchi.workers.dev";
@@ -34,6 +38,8 @@ export interface LineDeps {
   setWard: (userId: string, code: string) => Promise<void>;
   /** 匿名統計の加算（分類値のみ。本文は渡せない設計） */
   recordStat: (rec: { ward: string; technique: string; risk: RiskLevel }) => Promise<void>;
+  /** 電話番号チェックの匿名統計（番号帯の分類IDのみ。番号そのものは渡せない設計） */
+  recordPhoneStat: (band: string) => Promise<void>;
 }
 
 interface ExecutionCtxLike {
@@ -119,6 +125,32 @@ const RATE_LIMIT_TEXT = "アクセスが集中しています。1分ほど待っ
 const STATS_NOTICE = "※判定結果の分類だけを統計として記録します。文面は保存しません。";
 const WARD_HINT = "「地域設定」と送ると、お住まいの区市町村を設定できます（任意）。地域は統計の分類だけに使い、文面とは結び付けません。";
 const ERROR_TEXT = "判定サービスでエラーが発生しました。しばらくしてからもう一度お試しください。";
+
+// ---- 電話番号チェック（番号だけが送られたとき。ルールベース・LLM不使用） ----
+const PHONE_RULES = (phoneRulesJson as unknown as { rules: PhoneRule[] }).rules;
+
+/** 番号チェックの返信文を組み立てる。番号そのものは返信文にも含めない。読み取れなければ null */
+export function buildPhoneCheckReply(text: string): { message: string; band: string } | null {
+  const r = checkPhoneNumber(text, PHONE_RULES);
+  if (!r.ok) return null;
+  const level = PHONE_LEVEL_DISPLAY[r.level];
+  const message = [
+    `【電話番号チェック】${level.label}`,
+    r.label,
+    "",
+    level.headline,
+    r.note,
+    "",
+    PHONE_NUMBER_NOTICE,
+    "",
+    "電話で言われた内容をこのトークに送ると、内容も判定できます。",
+    `えらぶだけの電話チェック → ${APP_URL}/#/phone`,
+    `すでに出てしまった方（対処ナビ） → ${APP_URL}/#/after`,
+    "",
+    "※番号は保存しません。記録するのは番号帯の分類だけです。",
+  ].join("\n");
+  return { message, band: r.ruleId };
+}
 const TOO_LONG_TEXT = "文面が長すぎます（8000文字まで）。あやしい部分を中心に送ってください。";
 
 // ---- Flex Message（危険度・手口の型・都全体件数＋出典・次の行動 の既存4点セット） ----
@@ -221,6 +253,17 @@ export function buildJudgeFlex(result: {
         layout: "vertical",
         spacing: "sm",
         contents: [
+          // 要注意・注意のときは、すでに応じてしまった人向けの対処ナビへ案内する
+          ...(result.risk !== "low"
+            ? [
+                {
+                  type: "button",
+                  style: "secondary",
+                  height: "sm",
+                  action: { type: "uri", label: "すでに応じてしまった方へ", uri: `${APP_URL}/#/after` },
+                },
+              ]
+            : []),
           {
             type: "button",
             style: "secondary",
@@ -379,6 +422,15 @@ async function processEvent(event: LineEvent, accessToken: string, deps: LineDep
     return;
   }
   if (isText && text.trim().length === 0) return;
+  // 電話番号だけが送られたときは、LLMを使わず番号帯のルールで即時に返す
+  if (isText && looksLikePhoneNumberOnly(text)) {
+    const reply = buildPhoneCheckReply(text);
+    if (reply) {
+      await replyText(accessToken, replyToken, reply.message);
+      await deps.recordPhoneStat(reply.band);
+      return;
+    }
+  }
   if (text.length > 8000) {
     await replyText(accessToken, replyToken, TOO_LONG_TEXT);
     return;

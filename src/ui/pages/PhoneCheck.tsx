@@ -1,58 +1,55 @@
-// 電話チェック: 文字入力ゼロ・ボタンをえらぶだけで電話の内容を判定するウィザード（3問）。
-// 選択内容から定型の説明文を組み立て、通常の判定と同じLLMパイプラインに通す
-// （判定ロジックを一元化し、断定禁止・検証・サニタイズを共通で担保するため）。
+// 電話チェック: 番号の確認（任意・ルールベース）→ ボタンをえらぶだけの3問 → 判定。
+// - 番号チェックはこの端末の中だけで行う（番号そのものは保存も送信もしない。送るのは番号帯の分類IDのみ）
+// - 3問の選択内容から定型の説明文を組み立て、通常の判定と同じLLMパイプラインに通す
+//   （判定ロジックを一元化し、断定禁止・検証・サニタイズを共通で担保するため）
 
 import { useState } from "react";
-import { postJudge } from "../api.ts";
-import { LoadingKamo } from "../components/common.tsx";
-import { Icon } from "../components/icons.tsx";
+import phoneRulesJson from "../../../data/config/phone_rules.json";
+import { postJudge, postPhoneStat } from "../api.ts";
+import { BlockGuide, LoadingKamo } from "../components/common.tsx";
+import { Icon, type IconName } from "../components/icons.tsx";
+import {
+  checkPhoneNumber, PHONE_LEVEL_DISPLAY, PHONE_NUMBER_NOTICE,
+  type PhoneCheckResult, type PhoneLevel, type PhoneRule,
+} from "../../lib/phone/check.ts";
+import { PRESSURE_CHOICES, WHAT_CHOICES, WHO_CHOICES, type PhoneChoice } from "../../lib/phone/questions.ts";
 import type { JudgeResponse } from "../types.ts";
 
-interface Choice {
-  label: string; // ボタン表示
-  fragment: string; // 判定用の定型文
-}
+const PHONE_RULES = (phoneRulesJson as unknown as { rules: PhoneRule[] }).rules;
+const LEVEL_ICON: Record<PhoneLevel, IconName> = { high: "alert", caution: "alertCircle", info: "info" };
+const LEVEL_CLASS: Record<PhoneLevel, string> = { high: "risk-high", caution: "risk-caution", info: "risk-low" };
 
-const WHO_CHOICES: Choice[] = [
-  { label: "警察・検察を名乗っていた", fragment: "警察官または検察官を名乗る相手" },
-  { label: "役所・年金事務所・税務署を名乗っていた", fragment: "区役所・市役所・年金事務所・税務署の職員を名乗る相手" },
-  { label: "銀行・カード会社を名乗っていた", fragment: "銀行・銀行協会・カード会社の職員を名乗る相手" },
-  { label: "息子・娘・孫（家族）を名乗っていた", fragment: "息子・娘・孫など家族を名乗る相手" },
-  { label: "電話会社・パソコンのサポートを名乗っていた", fragment: "電話会社や大手IT企業のサポートを名乗る相手" },
-  { label: "知らない人・よくわからない", fragment: "名乗らない、またはよく知らない相手" },
-];
-
-const WHAT_CHOICES: Choice[] = [
-  { label: "お金を振り込んで・用意して と言われた", fragment: "お金の振り込みや現金の用意を求められた" },
-  { label: "ATMへ行くように言われた（還付金など）", fragment: "医療費や保険料の還付金があると言われ、ATMへ行って手続きするよう案内された" },
-  { label: "キャッシュカードを渡す・交換すると言われた", fragment: "キャッシュカードの確認・交換・預かりが必要と言われた。暗証番号についても聞かれた" },
-  { label: "口座が犯罪に使われている・逮捕状が出ている", fragment: "口座が犯罪に使われている、逮捕状が出ている、捜査に協力するよう言われた" },
-  { label: "携帯をなくした・番号が変わった と言われた", fragment: "携帯電話をなくして番号が変わったと言われ、その後お金の話が出た" },
-  { label: "投資すればもうかる と言われた", fragment: "投資すれば必ずもうかると勧誘された" },
-  { label: "家族構成やお金のことを聞かれた", fragment: "在宅時間・家族構成・自宅にある現金など、お金や暮らしのことをあれこれ聞かれた" },
-  { label: "その他・よくわからない", fragment: "内容ははっきりしないが、不審に感じる話をされた" },
-];
-
-const PRESSURE_CHOICES: Choice[] = [
-  { label: "はい、急がされた・口止めされた", fragment: "今日中に・今すぐと急がされたり、誰にも話さないよう口止めされた" },
-  { label: "いいえ", fragment: "特に急がされてはいない" },
-  { label: "よくわからない", fragment: "急がされたかどうかははっきりしない" },
-];
+type MatchedNumber = Extract<PhoneCheckResult, { ok: true }>;
 
 export function PhoneCheck({ onJudged }: { onJudged: (result: JudgeResponse, isDemoJudgement: boolean) => void }) {
-  const [step, setStep] = useState(0); // 0:誰から 1:内容 2:急がされたか
-  const [who, setWho] = useState<Choice | null>(null);
-  const [what, setWhat] = useState<Choice | null>(null);
+  const [step, setStep] = useState(-1); // -1:番号（任意） 0:誰から 1:内容 2:急がされたか
+  const [numberInput, setNumberInput] = useState("");
+  const [numberResult, setNumberResult] = useState<MatchedNumber | null>(null);
+  const [numberError, setNumberError] = useState<string | null>(null);
+  const [who, setWho] = useState<PhoneChoice | null>(null);
+  const [what, setWhat] = useState<PhoneChoice | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const judgeWith = async (pressure: Choice) => {
+  const checkNumber = () => {
+    const r = checkPhoneNumber(numberInput, PHONE_RULES);
+    if (r.ok) {
+      setNumberResult(r);
+      setNumberError(null);
+    } else {
+      setNumberResult(null);
+      setNumberError("電話番号として読み取れませんでした。着信履歴の番号を、数字と「+」で入力してください。");
+    }
+  };
+
+  const judgeWith = async (pressure: PhoneChoice) => {
     setBusy(true);
     setError(null);
     try {
-      // 選択肢から定型の説明文を組み立てて判定にかける（自由文の入力なし）
-      const composed = `電話がかかってきました。相手: ${who!.fragment}。言われた内容: ${what!.fragment}。${pressure.fragment}。`;
-      const result = await postJudge(composed);
+      // 選択肢から定型の説明文を組み立てて判定にかける（自由文の入力なし。番号そのものは含めない）
+      const origin = numberResult ? `発信元: ${numberResult.fragment}。` : "";
+      const composed = `電話がかかってきました。${origin}相手: ${who!.fragment}。言われた内容: ${what!.fragment}。${pressure.fragment}。`;
+      const result = await postJudge(composed, undefined, { band: numberResult?.ruleId ?? "none", org: who!.id });
       onJudged(result, false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "判定に失敗しました。しばらくしてからもう一度お試しください");
@@ -60,44 +57,121 @@ export function PhoneCheck({ onJudged }: { onJudged: (result: JudgeResponse, isD
     }
   };
 
-  const questions = [
-    {
-      title: "だれからの電話でしたか?",
-      choices: WHO_CHOICES,
-      onPick: (c: Choice) => { setWho(c); setStep(1); },
-    },
-    {
-      title: "どんなことを言われましたか?",
-      sub: "いちばん近いものをえらんでください",
-      choices: WHAT_CHOICES,
-      onPick: (c: Choice) => { setWhat(c); setStep(2); },
-    },
-    {
-      title: "「今すぐ」と急がされたり、「誰にも話さないで」と言われましたか?",
-      choices: PRESSURE_CHOICES,
-      onPick: (c: Choice) => void judgeWith(c),
-    },
-  ];
+  const heading = (
+    <h2 className="section-title icon-title" style={{ marginTop: 0, fontSize: "1.25rem" }}><Icon name="phone" size={22} />電話チェック</h2>
+  );
 
   if (busy) {
     return (
       <div>
-        <h2 className="section-title icon-title" style={{ marginTop: 0, fontSize: "1.25rem" }}><Icon name="phone" size={22} />電話チェック</h2>
+        {heading}
         <LoadingKamo message="カモが確認しています…そのままお待ちください（10秒ほど）" />
       </div>
     );
   }
 
+  // ---- ステップ1: 電話番号の確認（任意） ----
+  if (step === -1) {
+    const level = numberResult ? PHONE_LEVEL_DISPLAY[numberResult.level] : null;
+    return (
+      <div>
+        {heading}
+        <p className="phone-progress">ステップ 1 / 4（番号がわかる方のみ）</p>
+        <label htmlFor="phone-number" style={{ display: "block", fontSize: "1.25rem", fontWeight: 700 }}>
+          かかってきた電話番号がわかりますか?
+        </label>
+        <p className="source-note" style={{ marginTop: 4 }}>
+          着信履歴に残っている番号を入力してください。入力した番号は、この端末の中だけで確認し、保存も送信もしません。
+        </p>
+        <input
+          id="phone-number"
+          className="phone-input"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          placeholder="例: +1 844 ……"
+          value={numberInput}
+          onChange={(e) => { setNumberInput(e.target.value); setNumberResult(null); setNumberError(null); }}
+        />
+        {!numberResult && (
+          <>
+            <button type="button" className="judge-button" onClick={checkNumber} disabled={numberInput.trim().length === 0}>
+              番号をチェックする
+            </button>
+            {numberError && <div className="error-box" role="alert" style={{ marginTop: 12 }}>{numberError}</div>}
+            <button type="button" className="choice-button" style={{ marginTop: 12 }} onClick={() => setStep(0)}>
+              番号はわからない（とばして次へ）
+            </button>
+          </>
+        )}
+
+        {numberResult && level && (
+          <>
+            <div className="card summary-card" role="alert" style={{ marginTop: 12 }}>
+              <span className={`risk-pill ${LEVEL_CLASS[numberResult.level]}`}>
+                <Icon name={LEVEL_ICON[numberResult.level]} size={20} /> {level.label}
+              </span>
+              <p className="summary-technique">{numberResult.label}</p>
+              <p className="summary-headline">{level.headline}</p>
+              <p style={{ margin: "8px 0 0" }}>{numberResult.note}</p>
+              <p className="source-note" style={{ marginBottom: 0 }}>{PHONE_NUMBER_NOTICE}</p>
+            </div>
+            <button type="button" className="judge-button" style={{ marginTop: 0 }} onClick={() => setStep(0)}>
+              つづけて、電話の内容もチェックする
+            </button>
+            {numberResult.level !== "info" && (
+              <p style={{ marginTop: 12 }}>
+                <a className="button-secondary" href="#/after">すでに電話に出てしまった方へ（対処ナビ）</a>
+              </p>
+            )}
+            {numberResult.level !== "info" && <BlockGuide />}
+            <p style={{ marginTop: 12 }}>
+              <a className="button-secondary" href="#/" onClick={() => postPhoneStat(numberResult.ruleId)}>番号だけ確認して終わる</a>
+            </p>
+          </>
+        )}
+
+        {!numberResult && (
+          <p style={{ marginTop: 16 }}>
+            <a className="button-secondary" href="#/">← もどる</a>
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ---- ステップ2〜4: えらぶだけの3問 ----
+  const questions = [
+    {
+      title: "だれからの電話でしたか?",
+      sub: undefined as string | undefined,
+      choices: WHO_CHOICES,
+      onPick: (c: PhoneChoice) => { setWho(c); setStep(1); },
+    },
+    {
+      title: "どんなことを言われましたか?",
+      sub: "いちばん近いものをえらんでください",
+      choices: WHAT_CHOICES,
+      onPick: (c: PhoneChoice) => { setWhat(c); setStep(2); },
+    },
+    {
+      title: "「今すぐ」と急がされたり、「誰にも話さないで」と言われましたか?",
+      sub: undefined as string | undefined,
+      choices: PRESSURE_CHOICES,
+      onPick: (c: PhoneChoice) => void judgeWith(c),
+    },
+  ];
+
   const q = questions[step];
   return (
     <div>
-      <h2 className="section-title icon-title" style={{ marginTop: 0, fontSize: "1.25rem" }}><Icon name="phone" size={22} />電話チェック</h2>
-      <p className="phone-progress">質問 {step + 1} / 3</p>
+      {heading}
+      <p className="phone-progress">ステップ {step + 2} / 4</p>
       <p style={{ fontSize: "1.25rem", fontWeight: 700 }}>{q.title}</p>
-      {"sub" in q && q.sub && <p className="source-note" style={{ marginTop: 0 }}>{q.sub}</p>}
+      {q.sub && <p className="source-note" style={{ marginTop: 0 }}>{q.sub}</p>}
 
       {q.choices.map((c) => (
-        <button key={c.label} type="button" className="choice-button" onClick={() => q.onPick(c)}>
+        <button key={c.id} type="button" className="choice-button" onClick={() => q.onPick(c)}>
           {c.label}
         </button>
       ))}
@@ -105,11 +179,7 @@ export function PhoneCheck({ onJudged }: { onJudged: (result: JudgeResponse, isD
       {error && <div className="error-box" role="alert" style={{ marginTop: 12 }}>{error}</div>}
 
       <p style={{ marginTop: 16 }}>
-        {step > 0 ? (
-          <button type="button" className="button-secondary" onClick={() => setStep(step - 1)}>← 前の質問へもどる</button>
-        ) : (
-          <a className="button-secondary" href="#/">← もどる</a>
-        )}
+        <button type="button" className="button-secondary" onClick={() => setStep(step - 1)}>← 前へもどる</button>
       </p>
     </div>
   );

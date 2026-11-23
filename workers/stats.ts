@@ -4,8 +4,10 @@
 // - ward / technique は許可リスト外を 'unknown' に落とし、risk 不正時は加算しない
 
 import techniquesJson from "../data/config/techniques.json";
+import phoneRulesJson from "../data/config/phone_rules.json";
 import statsJson from "../data/cache/stats.json";
 import { RISK_LEVELS } from "../src/lib/judge/schema.ts";
+import { CLAIMED_ORG_IDS, WHO_CHOICES } from "../src/lib/phone/questions.ts";
 
 // D1 の最小型定義（@cloudflare/workers-types非依存）
 export interface D1Like {
@@ -128,6 +130,93 @@ export function toCsv(ym: string, rows: CountRow[]): string {
       r.technique,
       TECHNIQUE_NAMES.get(r.technique) ?? "判別できない型",
       r.risk,
+      r.n === null ? "" : String(r.n),
+    ].join(","),
+  );
+  return "﻿" + [header, ...lines].join("\r\n") + "\r\n";
+}
+
+// ---- 電話チェックの統計（番号帯 × 名乗られた組織。/api/counts/phone 系） ----
+// 番号そのもの・自由入力の組織名は受け取れない設計（PhoneStatRecord は分類IDのみ）
+
+export interface PhoneStatRecord {
+  band: string; // phone_rules.json の id または 'none'（番号未入力）
+  org: string; // 電話チェックの選択肢ID（'unknown'=利用者が「知らない人」を選択）。未回答は 'none'
+  channel: "web" | "line";
+}
+
+const PHONE_RULES = (phoneRulesJson as { rules: { id: string; label: string }[] }).rules;
+const BAND_IDS = new Set<string>(PHONE_RULES.map((r) => r.id));
+const ORG_IDS = new Set<string>(CLAIMED_ORG_IDS);
+
+/** 語彙に正規化する。語彙外の値（番号や自由文が紛れ込んだ場合を含む）は 'none'（未入力・未回答）に落とす */
+export function normalizePhoneStatRecord(rec: PhoneStatRecord): PhoneStatRecord | null {
+  if (!CHANNELS.has(rec.channel)) return null;
+  const band = BAND_IDS.has(rec.band) ? rec.band : "none";
+  const org = ORG_IDS.has(rec.org) ? rec.org : "none";
+  if (band === "none" && org === "none") return null; // 何も分類できない記録は加算しない
+  return { band, org, channel: rec.channel };
+}
+
+export async function recordPhoneStat(db: D1Like | undefined, rec: PhoneStatRecord): Promise<void> {
+  if (!db) return;
+  const v = normalizePhoneStatRecord(rec);
+  if (!v) return;
+  try {
+    await db
+      .prepare(
+        `INSERT INTO counts_phone (ym, band, claimed_org, channel, n)
+         VALUES (?, ?, ?, ?, 1)
+         ON CONFLICT(ym, band, claimed_org, channel) DO UPDATE SET n = n + 1`,
+      )
+      .bind(currentYmJst(), v.band, v.org, v.channel)
+      .run();
+  } catch (e) {
+    console.error(`[stats] phone record error: ${e instanceof Error ? e.message.slice(0, 200) : ""}`);
+  }
+}
+
+export interface PhoneCountRow {
+  band: string;
+  claimed_org: string;
+  n: number | null; // 小規模セル（5未満）は null に伏せる
+}
+
+async function queryPhoneMonthAll(db: D1Like, ym: string): Promise<{ band: string; claimed_org: string; n: number }[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT band, claimed_org, SUM(n) AS n FROM counts_phone
+       WHERE ym = ? GROUP BY band, claimed_org ORDER BY band, claimed_org`,
+    )
+    .bind(ym)
+    .all<{ band: string; claimed_org: string; n: number }>();
+  return results;
+}
+
+export async function queryPhoneMonth(db: D1Like, ym: string): Promise<{ rows: PhoneCountRow[]; total: number }> {
+  const results = await queryPhoneMonthAll(db, ym);
+  const total = results.reduce((a, r) => a + r.n, 0);
+  return { rows: results.map((r) => ({ ...r, n: r.n < SUPPRESS_BELOW ? null : r.n })), total };
+}
+
+/** 管理用: 抑制なし（それでも分類IDと件数のみ） */
+export function queryPhoneMonthRaw(db: D1Like, ym: string): Promise<PhoneCountRow[]> {
+  return queryPhoneMonthAll(db, ym);
+}
+
+const BAND_NAMES = new Map<string, string>(PHONE_RULES.map((r) => [r.id, r.label]));
+const ORG_NAMES = new Map<string, string>(WHO_CHOICES.map((c) => [c.id, c.label]));
+
+/** CSV（UTF-8 BOM付き・Excel対応）。伏せたセルの count は空欄 */
+export function phoneToCsv(ym: string, rows: PhoneCountRow[]): string {
+  const header = "month,band_id,band_name,claimed_org_id,claimed_org_name,count";
+  const lines = rows.map((r) =>
+    [
+      ym,
+      r.band,
+      BAND_NAMES.get(r.band) ?? "番号の入力なし",
+      r.claimed_org,
+      ORG_NAMES.get(r.claimed_org) ?? "未回答（番号チェックのみ）",
       r.n === null ? "" : String(r.n),
     ].join(","),
   );

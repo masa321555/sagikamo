@@ -118,6 +118,16 @@ main { flex: 1; padding: 16px; padding-bottom: 8px; }
   box-shadow: 0 1px 3px rgba(31, 58, 95, 0.15);
 }
 .phone-progress { color: var(--text-sub); font-size: 1rem; margin: 0 0 4px; }
+/* 電話番号の入力欄（着信履歴の番号を打ち込む。大きめの文字） */
+.phone-input {
+  display: block; width: 100%; font-size: 1.375rem; padding: 12px; letter-spacing: 0.04em;
+  border: 2px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text);
+}
+.phone-input:focus { outline: 3px solid var(--navy); outline-offset: 1px; }
+/* 対処ナビの手順リスト */
+.after-steps { margin: 0; padding-left: 1.4em; }
+.after-steps li { margin-bottom: 10px; line-height: 1.6; }
+.after-steps li:last-child { margin-bottom: 0; }
 
 /* 音声入力ボタン */
 .mic-button {
