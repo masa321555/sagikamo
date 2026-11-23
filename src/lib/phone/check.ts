@@ -23,11 +23,27 @@ export interface PhoneRulesJson {
 }
 
 export type PhoneCheckResult =
-  | { ok: true; ruleId: string; level: PhoneLevel; label: string; note: string; fragment: string; international: boolean }
+  | {
+      ok: true;
+      ruleId: string;
+      level: PhoneLevel;
+      label: string;
+      note: string;
+      fragment: string;
+      international: boolean;
+      partial: boolean; // 番号の先頭部分だけで判定した（全桁ではない）
+    }
   | { ok: false; reason: "invalid" };
 
+export interface PhoneCheckOptions {
+  /** 番号の先頭部分だけの入力（例: "+1844"）も受け付ける。入力欄が電話番号専用のときだけ true にする */
+  allowPartial?: boolean;
+}
+
+const FULL_MIN_DIGITS = 8; // これ未満は「先頭部分だけ」の入力とみなす
+
 /** 入力を正規化する。国際番号は "+<国番号…>"、国内番号は "0…" の数字列にそろえる。読み取れなければ null */
-export function normalizePhoneNumber(input: string): string | null {
+export function normalizePhoneNumber(input: string, opts: PhoneCheckOptions = {}): string | null {
   // 全角→半角、区切り文字（空白・各種ハイフン・括弧・ピリオド）を除去
   const half = input
     .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
@@ -37,30 +53,36 @@ export function normalizePhoneNumber(input: string): string | null {
 
   let n = half;
   // 「010」は日本から見た国際電話の識別番号。国際番号として扱う
-  if (!n.startsWith("+") && n.startsWith("010") && n.length >= 11) n = "+" + n.slice(3);
+  const minLenFor010 = opts.allowPartial ? 4 : 11;
+  if (!n.startsWith("+") && n.startsWith("010") && n.length >= minLenFor010) n = "+" + n.slice(3);
   // 日本の国番号つきは国内番号に戻す（+81 90… → 090…）
   if (n.startsWith("+81")) n = "0" + n.slice(3).replace(/^0/, "");
 
+  const international = n.startsWith("+");
   const digits = n.replace(/^\+/, "");
-  if (digits.length < 8 || digits.length > 15) return null;
-  if (!n.startsWith("+") && !n.startsWith("0")) return null; // 国内番号は0始まり
+  if (!international && !n.startsWith("0")) return null; // 国内番号は0始まり
+  // 全桁なら8〜15桁。先頭部分だけを許すときは、国際は国番号1桁以上、国内は市外局番の2桁以上
+  const minDigits = opts.allowPartial ? (international ? 1 : 2) : FULL_MIN_DIGITS;
+  if (digits.length < minDigits || digits.length > 15) return null;
   return n;
 }
 
-function ruleMatches(rule: PhoneRule, normalized: string): boolean {
+function ruleMatches(rule: PhoneRule, normalized: string, partial: boolean): boolean {
   const international = normalized.startsWith("+");
   const m = rule.match;
   if (m.international !== undefined && m.international !== international) return false;
   if (m.prefixes && !m.prefixes.some((p) => normalized.startsWith(p))) return false;
-  if (m.suffix && !normalized.endsWith(m.suffix)) return false;
+  // 末尾の一致は全桁がそろっているときだけ判定できる
+  if (m.suffix && (partial || !normalized.endsWith(m.suffix))) return false;
   return true;
 }
 
 /** ルールを上から順に評価し、最初に一致したものを採用する（具体的なルールほど上に書く） */
-export function checkPhoneNumber(input: string, rules: PhoneRule[]): PhoneCheckResult {
-  const normalized = normalizePhoneNumber(input);
+export function checkPhoneNumber(input: string, rules: PhoneRule[], opts: PhoneCheckOptions = {}): PhoneCheckResult {
+  const normalized = normalizePhoneNumber(input, opts);
   if (!normalized) return { ok: false, reason: "invalid" };
-  const rule = rules.find((r) => ruleMatches(r, normalized));
+  const partial = normalized.replace(/^\+/, "").length < FULL_MIN_DIGITS;
+  const rule = rules.find((r) => ruleMatches(r, normalized, partial));
   if (!rule) return { ok: false, reason: "invalid" };
   return {
     ok: true,
@@ -70,6 +92,7 @@ export function checkPhoneNumber(input: string, rules: PhoneRule[]): PhoneCheckR
     note: rule.note,
     fragment: rule.fragment,
     international: normalized.startsWith("+"),
+    partial,
   };
 }
 
@@ -95,6 +118,10 @@ export const PHONE_LEVEL_DISPLAY: Record<PhoneLevel, { label: string; headline: 
     headline: "番号の形式に、とくに注意喚起されている特徴は見つかりませんでした。",
   },
 };
+
+/** 番号の先頭部分だけで判定したときに添える案内 */
+export const PHONE_PARTIAL_NOTICE =
+  "番号の先頭部分から判定しました。末尾まで入力すると、警察署の番号に似せた表示（末尾0110）なども確認できます。";
 
 /** 番号チェックの結果に必ず添える定型注意文（番号は偽装できるため、番号だけで判断しない） */
 export const PHONE_NUMBER_NOTICE =

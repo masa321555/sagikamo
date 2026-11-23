@@ -9,7 +9,7 @@ import { postJudge, postPhoneStat } from "../api.ts";
 import { BlockGuide, LoadingKamo } from "../components/common.tsx";
 import { Icon, type IconName } from "../components/icons.tsx";
 import {
-  checkPhoneNumber, PHONE_LEVEL_DISPLAY, PHONE_NUMBER_NOTICE,
+  checkPhoneNumber, PHONE_LEVEL_DISPLAY, PHONE_NUMBER_NOTICE, PHONE_PARTIAL_NOTICE,
   type PhoneCheckResult, type PhoneLevel, type PhoneRule,
 } from "../../lib/phone/check.ts";
 import { PRESSURE_CHOICES, WHAT_CHOICES, WHO_CHOICES, type PhoneChoice } from "../../lib/phone/questions.ts";
@@ -32,13 +32,14 @@ export function PhoneCheck({ onJudged }: { onJudged: (result: JudgeResponse, isD
   const [error, setError] = useState<string | null>(null);
 
   const checkNumber = () => {
-    const r = checkPhoneNumber(numberInput, PHONE_RULES);
+    // 番号専用の入力欄なので、先頭部分だけの入力（例: +1844）でも判定する
+    const r = checkPhoneNumber(numberInput, PHONE_RULES, { allowPartial: true });
     if (r.ok) {
       setNumberResult(r);
       setNumberError(null);
     } else {
       setNumberResult(null);
-      setNumberError("電話番号として読み取れませんでした。着信履歴の番号を、数字と「+」で入力してください。");
+      setNumberError("電話番号として読み取れませんでした。数字と「+」で入力してください。先頭の数桁だけでも確認できます（例: +1 844、03、090）。");
     }
   };
 
@@ -114,6 +115,7 @@ export function PhoneCheck({ onJudged }: { onJudged: (result: JudgeResponse, isD
               <p className="summary-technique">{numberResult.label}</p>
               <p className="summary-headline">{level.headline}</p>
               <p style={{ margin: "8px 0 0" }}>{numberResult.note}</p>
+              {numberResult.partial && <p className="source-note" style={{ marginBottom: 0 }}>{PHONE_PARTIAL_NOTICE}</p>}
               <p className="source-note" style={{ marginBottom: 0 }}>{PHONE_NUMBER_NOTICE}</p>
             </div>
             <button type="button" className="judge-button" style={{ marginTop: 0 }} onClick={() => setStep(0)}>
